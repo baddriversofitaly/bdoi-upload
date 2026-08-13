@@ -55,7 +55,7 @@ export async function POST(request: NextRequest) {
                 </tr>
                 <tr>
                   <td align="center" style="padding-bottom: 22px;">
-                    <span style="color:#FFFFFF; font-size:15px; line-height:1.6; font-family: Arial, Helvetica, sans-serif;">Le pubblicheremo secondo le tempistiche riportate nella pagina <a href="https://baddriversofitaly.it/info" style="color:#FFFFFF; font-weight:bold; text-decoration:underline;">Info &amp; Regole</a>.</span>
+                    <span style="color:#FFFFFF; font-size:15px; line-height:1.6; font-family: Arial, Helvetica, sans-serif;">Lo pubblicheremo secondo le tempistiche riportate nella pagina <a href="https://baddriversofitaly.it/info" style="color:#FFFFFF; font-weight:bold; text-decoration:underline;">Info &amp; Regole</a>.</span>
                   </td>
                 </tr>
                 <tr>
