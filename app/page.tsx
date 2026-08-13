@@ -76,16 +76,16 @@ function QuestionStep({ onAnswer }: { onAnswer: (renamed: boolean) => void }) {
           <h2 className="text-white text-lg font-bold uppercase tracking-wide mb-3 text-center">
             Regole per l&apos;invio
           </h2>
-          <p className="text-white/90 text-[12px] mb-3 text-center">
+          <p className="text-white/90 text-[13px] mb-3 text-center">
             <strong>ATTENZIONE!</strong> Inviare i video non vuol dire che vengano
             automaticamente pubblicati! In media, selezioniamo il 20-25% di quello che ci viene
             inviato per la pubblicazione su Bad Drivers of Italy.
           </p>
-          <p className="text-white/90 text-[12px] mb-3">
+          <p className="text-white/90 text-[13px] mb-3">
             Bisogna rispettare i seguenti requisiti per i file, pena l&apos;esclusione a priori
             del contenuto:
           </p>
-          <ol className="text-white/90 text-[12px] list-decimal list-inside space-y-2">
+          <ol className="text-white/90 text-[13px] list-decimal list-inside space-y-2">
             <li>Dimensione massima per ogni file: 300MB.</li>
             <li>Durata dei video: minimo 6 secondi, massimo 60 secondi.</li>
             <li>
@@ -441,7 +441,7 @@ function NotRenamedForm({ onBack }: { onBack: () => void }) {
 
           <div>
             <label className="block text-xs font-bold uppercase tracking-wide text-white/90 mb-1">
-              Nickname per la pubblicazione <span className="font-normal normal-case text-white/60">(facoltativo)</span>
+              Nickname per la pubblicazione <span className="font-normal normal-case text-white/60">(facoltativo — se vuoto, verrà pubblicato come &quot;anonimo&quot;)</span>
             </label>
             <input
               type="text"
