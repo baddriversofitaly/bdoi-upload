@@ -66,7 +66,7 @@ export default function ContattiPage() {
             <form onSubmit={handleSubmit} className="space-y-4">
               <div>
                 <label className="block text-xs font-bold uppercase tracking-wide text-white/90 mb-1">
-                  Nome <span className="font-normal normal-case text-white/60">(facoltativo)</span>
+                  Nome o nickname <span className="font-normal normal-case text-white/60">(facoltativo)</span>
                 </label>
                 <input
                   type="text"
