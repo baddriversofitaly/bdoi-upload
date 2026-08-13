@@ -161,19 +161,53 @@ function TermsCheckbox() {
   )
 }
 
+async function uploadFileToStorage(
+  path: string,
+  file: File,
+  onProgress?: (percent: number) => void
+): Promise<void> {
+  return new Promise((resolve, reject) => {
+    const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL
+    const supabaseKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
+    const url = `${supabaseUrl}/storage/v1/object/video-uploads/${encodeURIComponent(path)}`
+
+    const xhr = new XMLHttpRequest()
+    xhr.open('POST', url, true)
+    xhr.setRequestHeader('apikey', supabaseKey ?? '')
+    xhr.setRequestHeader('Authorization', `Bearer ${supabaseKey}`)
+    xhr.setRequestHeader('Content-Type', file.type || 'application/octet-stream')
+
+    xhr.upload.onprogress = (event) => {
+      if (event.lengthComputable && onProgress) {
+        onProgress(Math.round((event.loaded / event.total) * 100))
+      }
+    }
+
+    xhr.onload = () => {
+      if (xhr.status >= 200 && xhr.status < 300) {
+        resolve()
+      } else {
+        reject(new Error(`Upload fallito (status ${xhr.status})`))
+      }
+    }
+    xhr.onerror = () => reject(new Error('Errore di rete durante il caricamento'))
+    xhr.send(file)
+  })
+}
+
 async function uploadOneFile(params: {
   file: File
   nickname: string | null
   location: string | null
   email: string
   note: string | null
+  onProgress?: (percent: number) => void
 }) {
-  const { file, nickname, location, email, note } = params
+  const { file, nickname, location, email, note, onProgress } = params
   const fileExt = file.name.split('.').pop()
   const filePath = `${Date.now()}-${Math.random().toString(36).slice(2)}.${fileExt}`
 
-  const { error: uploadError } = await supabase.storage.from('video-uploads').upload(filePath, file)
-  if (uploadError) throw uploadError
+  await uploadFileToStorage(filePath, file, onProgress)
 
   const { error: insertError } = await supabase.from('video_submissions').insert({
     nickname,
@@ -188,6 +222,20 @@ async function uploadOneFile(params: {
   if (insertError) throw insertError
 }
 
+function ProgressBar({ percent, label }: { percent: number; label: string }) {
+  return (
+    <div>
+      <div className="h-2.5 bg-white/20 rounded-full overflow-hidden">
+        <div
+          className="h-full bg-white rounded-full transition-all duration-150 ease-out"
+          style={{ width: `${percent}%` }}
+        />
+      </div>
+      <p className="text-white/70 text-xs mt-1.5 text-center">{label}</p>
+    </div>
+  )
+}
+
 // STEP: utente ha già rinominato i file -> solo email, note, upload multiplo
 function RenamedForm({ onBack }: { onBack: () => void }) {
   const [email, setEmail] = useState('')
@@ -196,6 +244,7 @@ function RenamedForm({ onBack }: { onBack: () => void }) {
   const [status, setStatus] = useState<SubmitStatus>('idle')
   const [errorMessage, setErrorMessage] = useState('')
   const [progress, setProgress] = useState({ current: 0, total: 0 })
+  const [fileProgress, setFileProgress] = useState(0)
 
   const handleFilesSelected = (e: React.ChangeEvent<HTMLInputElement>) => {
     const selected = Array.from(e.target.files ?? [])
@@ -233,12 +282,14 @@ function RenamedForm({ onBack }: { onBack: () => void }) {
     try {
       for (let i = 0; i < files.length; i++) {
         setProgress({ current: i + 1, total: files.length })
+        setFileProgress(0)
         await uploadOneFile({
           file: files[i].file,
           nickname: null,
           location: null,
           email,
           note: note || null,
+          onProgress: setFileProgress,
         })
       }
       setStatus('success')
@@ -323,6 +374,13 @@ function RenamedForm({ onBack }: { onBack: () => void }) {
 
           <TermsCheckbox />
 
+          {status === 'uploading' && (
+            <ProgressBar
+              percent={Math.round((((progress.current - 1) * 100 + fileProgress) / (progress.total * 100)) * 100)}
+              label={`Caricamento file ${progress.current}/${progress.total} — ${fileProgress}%`}
+            />
+          )}
+
           {errorMessage && (
             <p className="text-sm bg-white/95 text-red-700 rounded px-3 py-2 font-medium">{errorMessage}</p>
           )}
@@ -333,7 +391,7 @@ function RenamedForm({ onBack }: { onBack: () => void }) {
             className="w-full bg-white text-[#1B4B93] rounded-full py-3 font-bold uppercase tracking-wide disabled:opacity-50"
           >
             {status === 'uploading'
-              ? `Caricamento ${progress.current}/${progress.total}...`
+              ? 'Caricamento in corso...'
               : `Invia ${files.length > 1 ? `${files.length} video` : 'video'}`}
           </button>
         </form>
@@ -351,6 +409,7 @@ function NotRenamedForm({ onBack }: { onBack: () => void }) {
   const [file, setFile] = useState<File | null>(null)
   const [status, setStatus] = useState<SubmitStatus>('idle')
   const [errorMessage, setErrorMessage] = useState('')
+  const [uploadPercent, setUploadPercent] = useState(0)
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -374,6 +433,7 @@ function NotRenamedForm({ onBack }: { onBack: () => void }) {
     }
 
     setStatus('uploading')
+    setUploadPercent(0)
 
     try {
       await uploadOneFile({
@@ -382,6 +442,7 @@ function NotRenamedForm({ onBack }: { onBack: () => void }) {
         location,
         email,
         note: note || null,
+        onProgress: setUploadPercent,
       })
       setStatus('success')
     } catch (err) {
@@ -478,6 +539,10 @@ function NotRenamedForm({ onBack }: { onBack: () => void }) {
           </div>
 
           <TermsCheckbox />
+
+          {status === 'uploading' && (
+            <ProgressBar percent={uploadPercent} label={`Caricamento in corso — ${uploadPercent}%`} />
+          )}
 
           {errorMessage && (
             <p className="text-sm bg-white/95 text-red-700 rounded px-3 py-2 font-medium">{errorMessage}</p>
