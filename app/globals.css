@@ -1,0 +1,16 @@
+@import "tailwindcss";
+
+:root {
+  --brand-blue: #1B4B93;
+  --brand-blue-dark: #123769;
+  --brand-bg: #EEF1F5;
+}
+
+body {
+  font-family: var(--font-inter), ui-sans-serif, system-ui, sans-serif;
+  background-color: var(--brand-bg);
+}
+
+h1, h2, h3 {
+  font-family: var(--font-oswald), ui-sans-serif, system-ui, sans-serif;
+}
