@@ -25,6 +25,7 @@ export default function AdminPage() {
   const [loading, setLoading] = useState(true)
   const [checkingSession, setCheckingSession] = useState(true)
   const [tab, setTab] = useState<Tab>('pending')
+  const [selected, setSelected] = useState<Set<string>>(new Set())
 
   // Controlla che l'utente sia autenticato, altrimenti manda al login
   useEffect(() => {
@@ -78,50 +79,109 @@ export default function AdminPage() {
     const confirmed = window.confirm('Eliminare definitivamente questo video?')
     if (!confirmed) return
 
-    await supabase.storage.from('video-uploads').remove([submission.video_path])
-    await supabase.from('video_submissions').delete().eq('id', submission.id)
-
+    await deleteSubmission(submission)
     setSubmissions((prev) => prev.filter((s) => s.id !== submission.id))
   }
 
-  const handleDownload = async (submission: Submission) => {
+  const deleteSubmission = async (submission: Submission) => {
+    await supabase.storage.from('video-uploads').remove([submission.video_path])
+    await supabase.from('video_submissions').delete().eq('id', submission.id)
+  }
+
+  const downloadSubmission = async (submission: Submission) => {
     if (!submission.signedUrl) return
 
     const sanitize = (name: string) => name.replace(/[\\/:*?"<>|]/g, '-').trim()
     const ext = submission.video_path.split('.').pop()
 
-    // Se ha nickname/località (ramo "no", file non rinominato dall'utente) -> "nickname - località"
-    // Se non li ha (ramo "sì", file già rinominato) -> mantiene il nome originale dato dall'utente
     const fileName = submission.nickname
       ? `${sanitize(`${submission.nickname} - ${submission.location}`)}.${ext}`
       : submission.original_filename
         ? sanitize(submission.original_filename)
         : submission.video_path
 
+    const response = await fetch(submission.signedUrl)
+    const blob = await response.blob()
+    const blobUrl = URL.createObjectURL(blob)
+
+    const a = document.createElement('a')
+    a.href = blobUrl
+    a.download = fileName
+    document.body.appendChild(a)
+    a.click()
+    a.remove()
+    URL.revokeObjectURL(blobUrl)
+
+    if (!submission.downloaded) {
+      await supabase.from('video_submissions').update({ downloaded: true }).eq('id', submission.id)
+      setSubmissions((prev) =>
+        prev.map((s) => (s.id === submission.id ? { ...s, downloaded: true } : s))
+      )
+    }
+  }
+
+  const handleDownload = async (submission: Submission) => {
     try {
-      const response = await fetch(submission.signedUrl)
-      const blob = await response.blob()
-      const blobUrl = URL.createObjectURL(blob)
-
-      const a = document.createElement('a')
-      a.href = blobUrl
-      a.download = fileName
-      document.body.appendChild(a)
-      a.click()
-      a.remove()
-      URL.revokeObjectURL(blobUrl)
-
-      // Segna automaticamente come scaricato -> sposta nella scheda "Scaricati"
-      if (!submission.downloaded) {
-        await supabase.from('video_submissions').update({ downloaded: true }).eq('id', submission.id)
-        setSubmissions((prev) =>
-          prev.map((s) => (s.id === submission.id ? { ...s, downloaded: true } : s))
-        )
-      }
+      await downloadSubmission(submission)
     } catch (err) {
       console.error(err)
       alert('Errore durante il download del video.')
     }
+  }
+
+  const toggleSelect = (id: string) => {
+    setSelected((prev) => {
+      const next = new Set(prev)
+      if (next.has(id)) next.delete(id)
+      else next.add(id)
+      return next
+    })
+  }
+
+  const toggleSelectAll = (list: Submission[]) => {
+    setSelected((prev) => {
+      const allSelected = list.every((s) => prev.has(s.id))
+      const next = new Set(prev)
+      if (allSelected) {
+        list.forEach((s) => next.delete(s.id))
+      } else {
+        list.forEach((s) => next.add(s.id))
+      }
+      return next
+    })
+  }
+
+  const handleBulkDownload = async (list: Submission[]) => {
+    const targets = list.filter((s) => selected.has(s.id))
+    if (targets.length === 0) return
+
+    for (const submission of targets) {
+      try {
+        await downloadSubmission(submission)
+      } catch (err) {
+        console.error(err)
+        alert(`Errore durante il download di "${submission.original_filename ?? submission.video_path}".`)
+      }
+    }
+    setSelected(new Set())
+  }
+
+  const handleBulkDelete = async (list: Submission[]) => {
+    const targets = list.filter((s) => selected.has(s.id))
+    if (targets.length === 0) return
+
+    const confirmed = window.confirm(
+      `Eliminare definitivamente ${targets.length} video selezionati? L'operazione non è reversibile.`
+    )
+    if (!confirmed) return
+
+    for (const submission of targets) {
+      await deleteSubmission(submission)
+    }
+
+    const deletedIds = new Set(targets.map((s) => s.id))
+    setSubmissions((prev) => prev.filter((s) => !deletedIds.has(s.id)))
+    setSelected(new Set())
   }
 
   const handleToggleDownloaded = async (submission: Submission) => {
@@ -164,7 +224,10 @@ export default function AdminPage() {
         {/* Schede */}
         <div className="flex gap-2 mb-6">
           <button
-            onClick={() => setTab('pending')}
+            onClick={() => {
+              setTab('pending')
+              setSelected(new Set())
+            }}
             className={`px-4 py-2 rounded-full text-sm font-bold uppercase tracking-wide ${
               tab === 'pending'
                 ? 'bg-[#1B4B93] text-white'
@@ -174,7 +237,10 @@ export default function AdminPage() {
             Da valutare ({pending.length})
           </button>
           <button
-            onClick={() => setTab('downloaded')}
+            onClick={() => {
+              setTab('downloaded')
+              setSelected(new Set())
+            }}
             className={`px-4 py-2 rounded-full text-sm font-bold uppercase tracking-wide ${
               tab === 'downloaded'
                 ? 'bg-[#1B4B93] text-white'
@@ -191,28 +257,66 @@ export default function AdminPage() {
           </p>
         )}
 
+        {visible.length > 0 && (
+          <div className="flex items-center justify-between mb-4 bg-white rounded-lg border border-gray-200 px-4 py-2.5">
+            <label className="flex items-center gap-2 text-sm text-gray-700 cursor-pointer select-none">
+              <input
+                type="checkbox"
+                checked={visible.length > 0 && visible.every((s) => selected.has(s.id))}
+                onChange={() => toggleSelectAll(visible)}
+              />
+              {selected.size > 0 ? `${selected.size} selezionati` : 'Seleziona tutti'}
+            </label>
+
+            {selected.size > 0 && (
+              <div className="flex gap-2">
+                <button
+                  onClick={() => handleBulkDownload(visible)}
+                  className="bg-[#1B4B93] text-white px-3 py-1.5 rounded-full text-xs font-bold uppercase tracking-wide"
+                >
+                  Scarica selezionati
+                </button>
+                <button
+                  onClick={() => handleBulkDelete(visible)}
+                  className="bg-red-50 text-red-700 border border-red-200 px-3 py-1.5 rounded-full text-xs font-bold uppercase tracking-wide"
+                >
+                  Elimina selezionati
+                </button>
+              </div>
+            )}
+          </div>
+        )}
+
         <div className="space-y-6">
           {visible.map((s) => (
             <div
               key={s.id}
               className={`bg-white rounded-xl shadow border p-4 ${
                 s.downloaded ? 'border-green-300' : 'border-gray-200'
-              }`}
+              } ${selected.has(s.id) ? 'ring-2 ring-[#1B4B93]' : ''}`}
             >
               <div className="flex items-center justify-between mb-1">
-                <div className="flex flex-wrap gap-x-6 gap-y-1 text-sm text-gray-600">
-                  {s.nickname ? (
-                    <>
-                      <span><strong>Nickname:</strong> {s.nickname}</span>
-                      <span><strong>Località:</strong> {s.location}</span>
-                    </>
-                  ) : (
-                    <span className="italic text-gray-400">
-                      Nickname/località non forniti (utente ha dichiarato di aver già rinominato il file)
-                    </span>
-                  )}
-                  <span><strong>Email:</strong> {s.email}</span>
-                  <span><strong>Data:</strong> {new Date(s.created_at).toLocaleString('it-IT')}</span>
+                <div className="flex items-center gap-3">
+                  <input
+                    type="checkbox"
+                    checked={selected.has(s.id)}
+                    onChange={() => toggleSelect(s.id)}
+                    className="shrink-0"
+                  />
+                  <div className="flex flex-wrap gap-x-6 gap-y-1 text-sm text-gray-600">
+                    {s.nickname ? (
+                      <>
+                        <span><strong>Nickname:</strong> {s.nickname}</span>
+                        <span><strong>Località:</strong> {s.location}</span>
+                      </>
+                    ) : (
+                      <span className="italic text-gray-400">
+                        Nickname/località non forniti (utente ha dichiarato di aver già rinominato il file)
+                      </span>
+                    )}
+                    <span><strong>Email:</strong> {s.email}</span>
+                    <span><strong>Data:</strong> {new Date(s.created_at).toLocaleString('it-IT')}</span>
+                  </div>
                 </div>
 
                 <label className="flex items-center gap-1.5 text-sm text-gray-600 shrink-0 ml-3 cursor-pointer select-none">
