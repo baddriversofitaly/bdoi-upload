@@ -126,6 +126,8 @@ function QuestionStep({ onAnswer }: { onAnswer: (renamed: boolean) => void }) {
             video, serve solo a personalizzare il form di caricamento.
           </p>
         </div>
+
+        <ContactLink />
       </div>
     </main>
   )
@@ -139,6 +141,15 @@ function BackLink({ onBack }: { onBack: () => void }) {
     >
       ← Indietro
     </button>
+  )
+}
+
+function ContactLink() {
+  return (
+    <p className="text-center text-xs text-white/70 mt-4">
+      Hai bisogno di ulteriori informazioni?{' '}
+      <Link href="/contatti" className="text-white underline">Contattaci</Link>
+    </p>
   )
 }
 
@@ -236,6 +247,19 @@ function ProgressBar({ percent, label }: { percent: number; label: string }) {
   )
 }
 
+// Invia l'email di conferma senza bloccare il flusso se fallisce
+async function sendConfirmationEmail(email: string) {
+  try {
+    await fetch('/api/send-confirmation', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ email }),
+    })
+  } catch (err) {
+    console.error('Invio email di conferma fallito:', err)
+  }
+}
+
 // STEP: utente ha già rinominato i file -> solo email, note, upload multiplo
 function RenamedForm({ onBack }: { onBack: () => void }) {
   const [email, setEmail] = useState('')
@@ -292,6 +316,7 @@ function RenamedForm({ onBack }: { onBack: () => void }) {
           onProgress: setFileProgress,
         })
       }
+      await sendConfirmationEmail(email)
       setStatus('success')
     } catch (err) {
       console.error(err)
@@ -395,6 +420,8 @@ function RenamedForm({ onBack }: { onBack: () => void }) {
               : `Invia ${files.length > 1 ? `${files.length} video` : 'video'}`}
           </button>
         </form>
+
+        <ContactLink />
       </div>
     </main>
   )
@@ -444,6 +471,7 @@ function NotRenamedForm({ onBack }: { onBack: () => void }) {
         note: note || null,
         onProgress: setUploadPercent,
       })
+      await sendConfirmationEmail(email)
       setStatus('success')
     } catch (err) {
       console.error(err)
@@ -556,6 +584,8 @@ function NotRenamedForm({ onBack }: { onBack: () => void }) {
             {status === 'uploading' ? 'Caricamento in corso...' : 'Invia video'}
           </button>
         </form>
+
+        <ContactLink />
       </div>
     </main>
   )

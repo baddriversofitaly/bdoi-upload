@@ -74,8 +74,9 @@ export default function TerminiPage() {
           <h2 className="font-semibold text-lg mb-2">7. Richiesta di rimozione</h2>
           <p className="text-gray-700">
             Se un tuo video è già stato pubblicato e desideri richiederne la rimozione, puoi
-            contattarci tramite la pagina Contattaci, indicando il video interessato. Valuteremo
-            la richiesta caso per caso.
+            contattarci tramite la pagina{' '}
+            <Link href="/contatti" className="text-blue-600 underline">Contattaci</Link>, indicando
+            il video interessato. Valuteremo la richiesta caso per caso.
           </p>
         </section>
 
@@ -87,6 +88,11 @@ export default function TerminiPage() {
             pubblicati insieme al video salvo tuo consenso esplicito.
           </p>
         </section>
+
+        <p className="text-center text-sm text-gray-500 mt-8">
+          Hai bisogno di ulteriori informazioni?{' '}
+          <Link href="/contatti" className="text-blue-600 underline">Contattaci</Link>
+        </p>
       </div>
     </main>
   )
