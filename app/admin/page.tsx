@@ -2,6 +2,7 @@
 
 import { useEffect, useState, useCallback } from 'react'
 import { useRouter } from 'next/navigation'
+import Link from 'next/link'
 import { supabase } from '@/lib/supabaseClient'
 
 type Status = 'da_valutare' | 'da_scaricare' | 'scaricati' | 'scartate'
@@ -106,7 +107,7 @@ export default function AdminPage() {
 
     const sanitize = (name: string) => name.replace(/[\\/:*?"<>|]/g, '-').trim()
     const ext = submission.video_path.split('.').pop()
-    const seq = String(submission.seq_number).padStart(5, '0')
+    const seq = String(submission.seq_number).padStart(6, '0')
 
     // Il numero progressivo va sempre in testa al nome, per evitare sovrascritture
     // quando più invii hanno lo stesso nickname/località o lo stesso nome file originale.
@@ -244,9 +245,14 @@ export default function AdminPage() {
           <h1 className="text-2xl font-bold uppercase tracking-wide text-[#123769]">
             Pannello video
           </h1>
-          <button onClick={handleLogout} className="text-sm text-[#1B4B93] underline font-medium">
-            Esci
-          </button>
+          <div className="flex items-center gap-4">
+            <Link href="/admin/log" className="text-sm text-[#1B4B93] underline font-medium">
+              Elenco mastro
+            </Link>
+            <button onClick={handleLogout} className="text-sm text-[#1B4B93] underline font-medium">
+              Esci
+            </button>
+          </div>
         </div>
 
         {/* Schede */}
@@ -351,7 +357,7 @@ export default function AdminPage() {
                     className="shrink-0"
                   />
                   <span className="text-xs font-mono text-gray-400 shrink-0">
-                    #{String(s.seq_number).padStart(5, '0')}
+                    #{String(s.seq_number).padStart(6, '0')}
                   </span>
                   <div className="flex flex-wrap gap-x-6 gap-y-1 text-sm text-gray-600">
                     {s.nickname ? (

@@ -245,17 +245,31 @@ async function uploadOneFile(params: {
 
   await uploadFileToStorage(filePath, file, onProgress)
 
-  const { error: insertError } = await supabase.from('video_submissions').insert({
+  const { data: inserted, error: insertError } = await supabase
+    .from('video_submissions')
+    .insert({
+      nickname,
+      location,
+      email,
+      note,
+      original_filename: file.name,
+      video_path: filePath,
+      status: 'da_valutare',
+      terms_accepted_at: new Date().toISOString(),
+    })
+    .select('seq_number')
+    .single()
+  if (insertError) throw insertError
+
+  // Registro permanente: resta anche se il video viene poi eliminato dal pannello admin
+  const { error: logError } = await supabase.from('submission_log').insert({
+    seq_number: inserted?.seq_number,
     nickname,
     location,
     email,
-    note,
     original_filename: file.name,
-    video_path: filePath,
-    status: 'da_valutare',
-    terms_accepted_at: new Date().toISOString(),
   })
-  if (insertError) throw insertError
+  if (logError) console.error('Errore nel registro permanente:', logError)
 }
 
 function ProgressBar({ percent, label }: { percent: number; label: string }) {
@@ -439,7 +453,8 @@ function RenamedForm({ onBack }: { onBack: () => void }) {
               />
               <label htmlFor="renamed-confirmed" className="text-sm text-white">
                 Confermo che i nomi dei file qui sopra contengono già{' '}
-                <strong>nickname e località</strong>. Ho controllato prima di caricare.
+                <strong>località (obbligatorio)</strong> e <strong>nickname (facoltativo)</strong>.
+                Ho controllato prima di caricare.
               </label>
             </div>
           )}
