@@ -1,13 +1,13 @@
 import { NextRequest, NextResponse } from 'next/server'
-
+ 
 export async function POST(request: NextRequest) {
   try {
     const { email } = await request.json()
-
+ 
     if (!email) {
       return NextResponse.json({ error: 'Email mancante' }, { status: 400 })
     }
-
+ 
     const response = await fetch('https://api.resend.com/emails', {
       method: 'POST',
       headers: {
@@ -55,7 +55,7 @@ export async function POST(request: NextRequest) {
                 </tr>
                 <tr>
                   <td align="center" style="padding-bottom: 22px;">
-                    <span style="color:#FFFFFF; font-size:15px; line-height:1.6; font-family: Arial, Helvetica, sans-serif;">Lo pubblicheremo secondo le tempistiche riportate nella pagina <a href="https://baddriversofitaly.it/info" style="color:#FFFFFF; font-weight:bold; text-decoration:underline;">Info &amp; Regole</a>.</span>
+                    <span style="color:#FFFFFF; font-size:15px; line-height:1.6; font-family: Arial, Helvetica, sans-serif;">Tempi e modalità di selezione sono consultabili nella pagina <a href="https://baddriversofitaly.it/info" style="color:#FFFFFF; font-weight:bold; text-decoration:underline;">Info &amp; Regole</a>.</span>
                   </td>
                 </tr>
                 <tr>
@@ -64,13 +64,8 @@ export async function POST(request: NextRequest) {
                   </td>
                 </tr>
                 <tr>
-                  <td align="center" style="padding-bottom: 6px;">
-                    <span style="color:rgba(255,255,255,0.85); font-size:13px; line-height:1.6; font-family: Arial, Helvetica, sans-serif;">Se hai bisogno di altre informazioni, contattaci su</span>
-                  </td>
-                </tr>
-                <tr>
                   <td align="center" style="padding-bottom: 20px;">
-                    <a href="mailto:baddriversofitaly@gmail.com" style="color:#FFFFFF; font-size:14px; font-weight:bold; text-decoration:underline;">baddriversofitaly@gmail.com</a>
+                    <span style="color:rgba(255,255,255,0.85); font-size:13px; line-height:1.6; font-family: Arial, Helvetica, sans-serif;">Se hai bisogno, puoi contattarci attraverso il <a href="https://baddriversofitaly.it/contatti" style="color:#FFFFFF; font-weight:bold; text-decoration:underline;">form di contatto</a>.</span>
                   </td>
                 </tr>
                 <tr>
@@ -94,13 +89,13 @@ export async function POST(request: NextRequest) {
 </html>`,
       }),
     })
-
+ 
     if (!response.ok) {
       const errText = await response.text()
       console.error('Resend error:', errText)
       return NextResponse.json({ error: 'Invio fallito' }, { status: 500 })
     }
-
+ 
     return NextResponse.json({ success: true })
   } catch (err) {
     console.error(err)
