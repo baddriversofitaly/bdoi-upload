@@ -79,31 +79,40 @@ function QuestionStep({ onAnswer }: { onAnswer: (renamed: boolean) => void }) {
 
         <div className="bg-[#1B4B93] border-4 border-white rounded-2xl shadow-xl p-6 md:p-8">
           <h2 className="text-white text-lg font-bold uppercase tracking-wide mb-3 text-center">
-            Regole per l&apos;invio
+            Come contribuire a Bad Drivers of Italy
           </h2>
-          <p className="text-white/90 text-[13px] mb-3 text-center">
-            <strong>ATTENZIONE!</strong> Inviare i video non vuol dire che vengano
-            automaticamente pubblicati! In media, selezioniamo il 20-25% di quello che ci viene
-            inviato per la pubblicazione su Bad Drivers of Italy.
-          </p>
-          <p className="text-white/90 text-[13px] mb-3">
-            Bisogna rispettare i seguenti requisiti per i file, pena l&apos;esclusione a priori
-            del contenuto:
-          </p>
-          <ol className="text-white/90 text-[13px] list-decimal list-inside space-y-2">
-            <li>Dimensione massima per ogni file: 300MB.</li>
-            <li>Durata dei video: minimo 6 secondi, massimo 60 secondi.</li>
+          <ol className="text-white/90 text-[13px] list-decimal list-inside space-y-2.5">
             <li>
-              Massimo 5 file a settimana, tenendo presente che in media il 75% dei video viene
-              scartato: meglio mandare solo i più rilevanti.
+              Avere una dashcam a bordo: non accettiamo video registrati con il cellulare
+              (specialmente se ripresi dal posto di guida). Ti serve una dashcam? Trova la tua su{' '}
+              <a
+                href="https://www.sicurisullastrada.it"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="underline font-semibold"
+              >
+                SicuriSullaStrada.it
+              </a>
+              .
+            </li>
+            <li>
+              Requisiti tecnici. Dimensione massima: 300MB per ogni file. Durata: minimo 6
+              secondi, massimo 60 secondi.
+            </li>
+            <li>
+              Massimo 5 file a settimana (consulta la pagina{' '}
+              <Link href="/info" className="underline font-semibold">Info & Regole</Link> per
+              sapere di più sui criteri di selezione).
             </li>
             <li>
               No collage di clip in un unico file: i video vanno inviati separatamente anche in
               caso di riprese fronte-retro.
             </li>
             <li>
-              Inviare più volte lo stesso file non aumenta le probabilità di pubblicazione (anzi
-              il contrario…).
+              Inviare i video non vuol dire che vengano automaticamente pubblicati. In media,
+              selezioniamo il 20-25% di quello che ci viene inviato per la pubblicazione su Bad
+              Drivers of Italy. Inviare più volte lo stesso file non aumenta le probabilità di
+              pubblicazione (anzi il contrario…).
             </li>
           </ol>
         </div>
@@ -127,7 +136,7 @@ function QuestionStep({ onAnswer }: { onAnswer: (renamed: boolean) => void }) {
             </button>
           </div>
           <p className="text-white/70 text-xs max-w-sm mx-auto mb-4">
-            La risposta non influisce in alcun modo sulla selezione o pubblicazione dei tuoi
+            La scelta non influisce in alcun modo sulla selezione o pubblicazione dei tuoi
             video, serve solo a personalizzare il form di caricamento.
           </p>
 
