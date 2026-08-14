@@ -83,36 +83,43 @@ function QuestionStep({ onAnswer }: { onAnswer: (renamed: boolean) => void }) {
           </h2>
           <ol className="text-white/90 text-[13px] list-decimal list-inside space-y-2.5">
             <li>
-              Avere una dashcam a bordo: non accettiamo video registrati con il cellulare
-              (specialmente se ripresi dal posto di guida). Ti serve una dashcam? Trova la tua su{' '}
+              Avere una <strong>dashcam a bordo</strong>, non accettiamo video registrati con il
+              cellulare (specialmente se ripresi dal posto di guida). Ti serve una dashcam? Trova
+              la tua su{' '}
               <a
                 href="https://www.sicurisullastrada.it"
                 target="_blank"
                 rel="noopener noreferrer"
                 className="underline font-semibold"
               >
-                SicuriSullaStrada.it
+                sicurisullastrada.it
               </a>
               .
             </li>
             <li>
-              Requisiti tecnici. Dimensione massima: 300MB per ogni file. Durata: minimo 6
-              secondi, massimo 60 secondi.
+              Indicare <strong>località</strong> (obbligatorio) e <strong>nickname</strong>{' '}
+              (facoltativo). Questo può essere fatto dal proprio dispositivo rinominando il file
+              con le info (opzione &quot;Sì&quot; in basso) oppure attraverso il form di
+              caricamento (opzione &quot;No&quot; in basso).
             </li>
             <li>
-              Massimo 5 file a settimana (consulta la pagina{' '}
+              <strong>Requisiti tecnici dei file:</strong> dimensione massima 300MB, durata
+              minima 6 secondi, durata massima 60 secondi.
+            </li>
+            <li>
+              <strong>Massimo 5 file</strong> a settimana (consulta la pagina{' '}
               <Link href="/info" className="underline font-semibold">Info & Regole</Link> per
-              sapere di più sui criteri di selezione).
+              saperne di più sui criteri di selezione).
             </li>
             <li>
-              No collage di clip in un unico file: i video vanno inviati separatamente anche in
-              caso di riprese fronte-retro.
+              No collage di clip in un unico file: i video vanno <strong>inviati
+              separatamente</strong> anche in caso di riprese fronte-retro.
             </li>
             <li>
               Inviare i video non vuol dire che vengano automaticamente pubblicati. In media,
-              selezioniamo il 20-25% di quello che ci viene inviato per la pubblicazione su Bad
-              Drivers of Italy. Inviare più volte lo stesso file non aumenta le probabilità di
-              pubblicazione (anzi il contrario…).
+              selezioniamo il <strong>20-25% di quello che ci viene inviato</strong> per la
+              pubblicazione su Bad Drivers of Italy. Inviare più volte lo stesso file non aumenta
+              le probabilità di pubblicazione.
             </li>
           </ol>
         </div>
@@ -135,10 +142,6 @@ function QuestionStep({ onAnswer }: { onAnswer: (renamed: boolean) => void }) {
               No
             </button>
           </div>
-          <p className="text-white/70 text-xs max-w-sm mx-auto mb-4">
-            La scelta non influisce in alcun modo sulla selezione o pubblicazione dei tuoi
-            video, serve solo a personalizzare il form di caricamento.
-          </p>
 
           <ContactLink />
 
@@ -291,6 +294,7 @@ function RenamedForm({ onBack }: { onBack: () => void }) {
   const [errorMessage, setErrorMessage] = useState('')
   const [progress, setProgress] = useState({ current: 0, total: 0 })
   const [fileProgress, setFileProgress] = useState(0)
+  const [renamedConfirmed, setRenamedConfirmed] = useState(false)
 
   const handleFilesSelected = (e: React.ChangeEvent<HTMLInputElement>) => {
     const selected = Array.from(e.target.files ?? [])
@@ -310,6 +314,10 @@ function RenamedForm({ onBack }: { onBack: () => void }) {
 
     if (files.length === 0) {
       setErrorMessage('Seleziona almeno un video da caricare.')
+      return
+    }
+    if (!renamedConfirmed) {
+      setErrorMessage('Conferma di aver rinominato correttamente i file prima di continuare.')
       return
     }
     const oversized = files.find((f) => f.file.size > MAX_FILE_SIZE_MB * 1024 * 1024)
@@ -420,6 +428,22 @@ function RenamedForm({ onBack }: { onBack: () => void }) {
             )}
           </div>
 
+          {files.length > 0 && (
+            <div className="flex items-start gap-2 bg-white/10 rounded-md px-3 py-2.5">
+              <input
+                type="checkbox"
+                id="renamed-confirmed"
+                checked={renamedConfirmed}
+                onChange={(e) => setRenamedConfirmed(e.target.checked)}
+                className="mt-1"
+              />
+              <label htmlFor="renamed-confirmed" className="text-sm text-white">
+                Confermo che i nomi dei file qui sopra contengono già{' '}
+                <strong>nickname e località</strong>. Ho controllato prima di caricare.
+              </label>
+            </div>
+          )}
+
           <TermsCheckbox />
 
           {status === 'uploading' && (
@@ -435,7 +459,7 @@ function RenamedForm({ onBack }: { onBack: () => void }) {
 
           <button
             type="submit"
-            disabled={status === 'uploading'}
+            disabled={status === 'uploading' || !renamedConfirmed}
             className="w-full bg-white text-[#1B4B93] rounded-full py-3 font-bold uppercase tracking-wide disabled:opacity-50"
           >
             {status === 'uploading'
