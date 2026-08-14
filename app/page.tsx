@@ -4,6 +4,7 @@ import { useState, useEffect } from 'react'
 import Image from 'next/image'
 import Link from 'next/link'
 import { supabase } from '@/lib/supabaseClient'
+import SocialIcons from './components/SocialIcons'
 
 const MAX_FILE_SIZE_MB = 300
 const MAX_FILES_RENAMED = 5
@@ -131,6 +132,11 @@ function QuestionStep({ onAnswer }: { onAnswer: (renamed: boolean) => void }) {
           </p>
 
           <ContactLink />
+
+          <div className="mt-5">
+            <p className="text-center text-xs text-white/70 mb-2">Seguici su</p>
+            <SocialIcons />
+          </div>
         </div>
       </div>
     </main>
@@ -429,6 +435,11 @@ function RenamedForm({ onBack }: { onBack: () => void }) {
           </button>
 
           <ContactLink />
+
+          <div className="mt-5">
+            <p className="text-center text-xs text-white/70 mb-2">Seguici su</p>
+            <SocialIcons />
+          </div>
         </form>
       </div>
     </main>
@@ -594,6 +605,11 @@ function NotRenamedForm({ onBack }: { onBack: () => void }) {
           </button>
 
           <ContactLink />
+
+          <div className="mt-5">
+            <p className="text-center text-xs text-white/70 mb-2">Seguici su</p>
+            <SocialIcons />
+          </div>
         </form>
       </div>
     </main>

@@ -1,4 +1,5 @@
 import Link from 'next/link'
+import SocialIcons from '../components/SocialIcons'
 
 export default function TerminiPage() {
   return (
@@ -93,6 +94,11 @@ export default function TerminiPage() {
           Hai bisogno di ulteriori informazioni?{' '}
           <Link href="/contatti" className="text-blue-600 underline">Contattaci</Link>
         </p>
+      </div>
+
+      <div className="max-w-2xl mx-auto mt-6">
+        <p className="text-center text-xs text-[#123769]/70 mb-2">Seguici su</p>
+        <SocialIcons variant="dark" />
       </div>
     </main>
   )

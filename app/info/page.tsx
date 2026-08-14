@@ -1,4 +1,5 @@
 import Link from 'next/link'
+import SocialIcons from '../components/SocialIcons'
 
 export default function InfoPage() {
   return (
@@ -106,6 +107,11 @@ export default function InfoPage() {
             apparente motivo, contattaci indicando il video interessato.
           </p>
         </section>
+      </div>
+
+      <div className="max-w-2xl mx-auto mt-6">
+        <p className="text-center text-xs text-[#123769]/70 mb-2">Seguici su</p>
+        <SocialIcons variant="dark" />
       </div>
     </main>
   )

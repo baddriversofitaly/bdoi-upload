@@ -2,6 +2,7 @@
 
 import { useState } from 'react'
 import Link from 'next/link'
+import SocialIcons from '../components/SocialIcons'
 
 export default function ContattiPage() {
   const [name, setName] = useState('')
@@ -117,6 +118,11 @@ export default function ContattiPage() {
               </button>
             </form>
           )}
+        </div>
+
+        <div className="mt-6">
+          <p className="text-center text-xs text-white/70 mb-2">Seguici su</p>
+          <SocialIcons />
         </div>
       </div>
     </main>
