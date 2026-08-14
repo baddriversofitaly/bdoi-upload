@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import Image from 'next/image'
 import Link from 'next/link'
 import { supabase } from '@/lib/supabaseClient'
@@ -54,6 +54,10 @@ function SuccessCard({ onReset }: { onReset: () => void }) {
 
 export default function UploadPage() {
   const [step, setStep] = useState<Step>('question')
+
+  useEffect(() => {
+    window.scrollTo(0, 0)
+  }, [step])
 
   if (step === 'question') {
     return <QuestionStep onAnswer={(renamed) => setStep(renamed ? 'renamed' : 'not-renamed')} />
@@ -121,13 +125,13 @@ function QuestionStep({ onAnswer }: { onAnswer: (renamed: boolean) => void }) {
               No
             </button>
           </div>
-          <p className="text-white/70 text-xs max-w-sm mx-auto">
+          <p className="text-white/70 text-xs max-w-sm mx-auto mb-4">
             La risposta non influisce in alcun modo sulla selezione o pubblicazione dei tuoi
             video, serve solo a personalizzare il form di caricamento.
           </p>
-        </div>
 
-        <ContactLink />
+          <ContactLink />
+        </div>
       </div>
     </main>
   )
@@ -136,8 +140,9 @@ function QuestionStep({ onAnswer }: { onAnswer: (renamed: boolean) => void }) {
 function BackLink({ onBack }: { onBack: () => void }) {
   return (
     <button
+      type="button"
       onClick={onBack}
-      className="text-white/80 hover:text-white text-sm mb-3 inline-flex items-center gap-1"
+      className="text-white bg-white/15 hover:bg-white/25 text-sm font-semibold inline-flex items-center gap-1 rounded-full px-3 py-1.5 transition"
     >
       ← Indietro
     </button>
@@ -146,10 +151,12 @@ function BackLink({ onBack }: { onBack: () => void }) {
 
 function ContactLink() {
   return (
-    <p className="text-center text-xs text-white/70 mt-4">
-      Hai bisogno di ulteriori informazioni?{' '}
-      <Link href="/contatti" className="text-white underline">Contattaci</Link>
-    </p>
+    <div className="border-t border-white/25 pt-4">
+      <p className="text-center text-sm text-white">
+        Hai bisogno di ulteriori informazioni?{' '}
+        <Link href="/contatti" className="font-bold underline">Contattaci</Link>
+      </p>
+    </div>
   )
 }
 
@@ -333,12 +340,13 @@ function RenamedForm({ onBack }: { onBack: () => void }) {
     <main className="min-h-screen px-4 py-10">
       <div className="max-w-xl mx-auto">
         <Logo />
-        <BackLink onBack={onBack} />
 
         <form
           onSubmit={handleSubmit}
           className="bg-[#1B4B93] border-4 border-white rounded-2xl shadow-xl p-6 md:p-8 space-y-5"
         >
+          <BackLink onBack={onBack} />
+
           <div>
             <h1 className="text-white text-xl font-bold uppercase tracking-wide">Carica i tuoi video</h1>
             <p className="text-white/75 text-sm mt-1">
@@ -419,9 +427,9 @@ function RenamedForm({ onBack }: { onBack: () => void }) {
               ? 'Caricamento in corso...'
               : `Invia ${files.length > 1 ? `${files.length} video` : 'video'}`}
           </button>
-        </form>
 
-        <ContactLink />
+          <ContactLink />
+        </form>
       </div>
     </main>
   )
@@ -488,12 +496,13 @@ function NotRenamedForm({ onBack }: { onBack: () => void }) {
     <main className="min-h-screen px-4 py-10">
       <div className="max-w-xl mx-auto">
         <Logo />
-        <BackLink onBack={onBack} />
 
         <form
           onSubmit={handleSubmit}
           className="bg-[#1B4B93] border-4 border-white rounded-2xl shadow-xl p-6 md:p-8 space-y-5"
         >
+          <BackLink onBack={onBack} />
+
           <div>
             <h1 className="text-white text-xl font-bold uppercase tracking-wide">Carica il tuo video</h1>
             <p className="text-white/75 text-sm mt-1">
@@ -583,9 +592,9 @@ function NotRenamedForm({ onBack }: { onBack: () => void }) {
           >
             {status === 'uploading' ? 'Caricamento in corso...' : 'Invia video'}
           </button>
-        </form>
 
-        <ContactLink />
+          <ContactLink />
+        </form>
       </div>
     </main>
   )
