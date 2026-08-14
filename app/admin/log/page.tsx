@@ -12,7 +12,20 @@ type LogEntry = {
   location: string | null
   original_filename: string | null
   email: string
+  status: 'da_valutare' | 'scaricato' | 'scartato'
   created_at: string
+}
+
+const STATUS_LABELS: Record<LogEntry['status'], string> = {
+  da_valutare: 'Da valutare',
+  scaricato: 'Scaricato',
+  scartato: 'Scartato',
+}
+
+const STATUS_COLORS: Record<LogEntry['status'], string> = {
+  da_valutare: 'bg-gray-100 text-gray-700',
+  scaricato: 'bg-green-100 text-green-700',
+  scartato: 'bg-amber-100 text-amber-800',
 }
 
 export default function AdminLogPage() {
@@ -53,13 +66,14 @@ export default function AdminLogPage() {
   }, [checkingSession, loadEntries])
 
   const handleExportCsv = () => {
-    const header = ['Numero', 'Nome file', 'Nickname', 'Località', 'Email', 'Data invio']
+    const header = ['Numero', 'Nome file', 'Nickname', 'Località', 'Email', 'Stato', 'Data invio']
     const rows = entries.map((e) => [
       String(e.seq_number).padStart(6, '0'),
       e.original_filename ?? '—',
       e.nickname ?? '—',
       e.location ?? '—',
       e.email,
+      STATUS_LABELS[e.status] ?? e.status,
       new Date(e.created_at).toLocaleString('it-IT'),
     ])
 
@@ -119,6 +133,7 @@ export default function AdminLogPage() {
                 <th className="px-4 py-3 font-semibold">Nickname</th>
                 <th className="px-4 py-3 font-semibold">Località</th>
                 <th className="px-4 py-3 font-semibold">Email</th>
+                <th className="px-4 py-3 font-semibold">Stato</th>
                 <th className="px-4 py-3 font-semibold">Data invio</th>
               </tr>
             </thead>
@@ -134,6 +149,11 @@ export default function AdminLogPage() {
                   <td className="px-4 py-2.5 text-gray-700">{e.nickname ?? '—'}</td>
                   <td className="px-4 py-2.5 text-gray-700">{e.location ?? '—'}</td>
                   <td className="px-4 py-2.5 text-gray-700">{e.email}</td>
+                  <td className="px-4 py-2.5">
+                    <span className={`px-2 py-1 rounded-full text-xs font-semibold ${STATUS_COLORS[e.status] ?? 'bg-gray-100 text-gray-700'}`}>
+                      {STATUS_LABELS[e.status] ?? e.status}
+                    </span>
+                  </td>
                   <td className="px-4 py-2.5 text-gray-500">
                     {new Date(e.created_at).toLocaleString('it-IT')}
                   </td>
