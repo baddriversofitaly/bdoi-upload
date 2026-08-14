@@ -18,6 +18,11 @@ const nextConfig: NextConfig = {
         destination: "/contatti",
         permanent: true,
       },
+      {
+        source: "/canali.html",
+        destination: "/contatti",
+        permanent: true,
+      },
     ];
   },
 };
