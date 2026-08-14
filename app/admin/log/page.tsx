@@ -52,14 +52,13 @@ export default function AdminLogPage() {
     if (!checkingSession) loadEntries()
   }, [checkingSession, loadEntries])
 
-  const nameFor = (e: LogEntry) =>
-    e.nickname ? `${e.nickname} - ${e.location}` : (e.original_filename ?? '—')
-
   const handleExportCsv = () => {
-    const header = ['Numero', 'Nome', 'Email', 'Data invio']
+    const header = ['Numero', 'Nome file', 'Nickname', 'Località', 'Email', 'Data invio']
     const rows = entries.map((e) => [
       String(e.seq_number).padStart(6, '0'),
-      nameFor(e),
+      e.original_filename ?? '—',
+      e.nickname ?? '—',
+      e.location ?? '—',
       e.email,
       new Date(e.created_at).toLocaleString('it-IT'),
     ])
@@ -116,7 +115,9 @@ export default function AdminLogPage() {
             <thead>
               <tr className="text-left text-gray-500 border-b border-gray-200">
                 <th className="px-4 py-3 font-semibold">Numero</th>
-                <th className="px-4 py-3 font-semibold">Nome</th>
+                <th className="px-4 py-3 font-semibold">Nome file</th>
+                <th className="px-4 py-3 font-semibold">Nickname</th>
+                <th className="px-4 py-3 font-semibold">Località</th>
                 <th className="px-4 py-3 font-semibold">Email</th>
                 <th className="px-4 py-3 font-semibold">Data invio</th>
               </tr>
@@ -127,7 +128,11 @@ export default function AdminLogPage() {
                   <td className="px-4 py-2.5 font-mono text-gray-400">
                     #{String(e.seq_number).padStart(6, '0')}
                   </td>
-                  <td className="px-4 py-2.5 text-gray-700">{nameFor(e)}</td>
+                  <td className="px-4 py-2.5 text-gray-700 font-mono text-xs">
+                    {e.original_filename ?? '—'}
+                  </td>
+                  <td className="px-4 py-2.5 text-gray-700">{e.nickname ?? '—'}</td>
+                  <td className="px-4 py-2.5 text-gray-700">{e.location ?? '—'}</td>
                   <td className="px-4 py-2.5 text-gray-700">{e.email}</td>
                   <td className="px-4 py-2.5 text-gray-500">
                     {new Date(e.created_at).toLocaleString('it-IT')}
