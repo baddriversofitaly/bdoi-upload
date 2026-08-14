@@ -315,6 +315,12 @@ export default function AdminPage() {
                     >
                       Scarta
                     </button>
+                    <button
+                      onClick={() => handleBulkStatus(visible, 'da_valutare')}
+                      className="bg-white text-[#1B4B93] border border-[#1B4B93]/40 px-3 py-1.5 rounded-full text-xs font-bold uppercase tracking-wide"
+                    >
+                      Rimetti in valutazione
+                    </button>
                   </>
                 )}
                 <button
@@ -416,6 +422,12 @@ export default function AdminPage() {
                       className="bg-amber-400 text-[#123769] px-4 py-2 rounded-full text-sm font-bold uppercase tracking-wide"
                     >
                       Scarta
+                    </button>
+                    <button
+                      onClick={() => updateStatus(s, 'da_valutare')}
+                      className="bg-white text-[#1B4B93] border border-[#1B4B93]/40 px-4 py-2 rounded-full text-sm font-bold uppercase tracking-wide"
+                    >
+                      Rimetti in valutazione
                     </button>
                   </>
                 )}
