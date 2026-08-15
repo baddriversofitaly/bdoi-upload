@@ -14,12 +14,18 @@ export default function FeedbackPage() {
   const [status, setStatus] = useState<'idle' | 'sending' | 'success' | 'error'>('idle')
   const [errorMessage, setErrorMessage] = useState('')
 
+  const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     setErrorMessage('')
 
     if (!description.trim()) {
       setErrorMessage('Descrivi il consiglio o il problema riscontrato.')
+      return
+    }
+    if (!emailRegex.test(email)) {
+      setErrorMessage('Inserisci un indirizzo email valido.')
       return
     }
     if (screenshot && screenshot.size > MAX_SCREENSHOT_MB * 1024 * 1024) {
@@ -123,10 +129,11 @@ export default function FeedbackPage() {
 
               <div>
                 <label className="block text-xs font-bold uppercase tracking-wide text-white/90 mb-1">
-                  Email <span className="font-normal normal-case text-white/60">(facoltativa, se vuoi una risposta)</span>
+                  Email <span className="font-normal normal-case text-white/60">(obbligatoria, per poterti rispondere)</span>
                 </label>
                 <input
                   type="email"
+                  required
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
                   className="w-full rounded-md px-3 py-2 bg-white text-[#123769] focus:outline-none focus:ring-2 focus:ring-white"

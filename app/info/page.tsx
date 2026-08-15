@@ -107,6 +107,15 @@ export default function InfoPage() {
             apparente motivo, contattaci indicando il video interessato.
           </p>
         </section>
+
+        <p className="text-center text-sm text-gray-500 mt-8">
+          Hai bisogno di ulteriori informazioni?{' '}
+          <Link href="/contatti" className="text-blue-600 underline">Contattaci</Link>
+        </p>
+        <p className="text-center text-sm text-gray-500 mt-2">
+          Hai un consiglio o hai trovato un problema?{' '}
+          <Link href="/feedback" className="text-blue-600 underline">Segnalacelo</Link>
+        </p>
       </div>
 
       <div className="max-w-2xl mx-auto mt-6">

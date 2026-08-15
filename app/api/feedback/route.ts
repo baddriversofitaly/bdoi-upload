@@ -10,8 +10,8 @@ export async function POST(request: NextRequest) {
     const email = formData.get('email') as string | null
     const screenshot = formData.get('screenshot') as File | null
 
-    if (!description) {
-      return NextResponse.json({ error: 'Descrizione mancante' }, { status: 400 })
+    if (!description || !email) {
+      return NextResponse.json({ error: 'Dati mancanti' }, { status: 400 })
     }
 
     const attachments: { filename: string; content: string }[] = []
@@ -39,9 +39,9 @@ export async function POST(request: NextRequest) {
       body: JSON.stringify({
         from: 'Bad Drivers of Italy <no-reply@baddriversofitaly.it>',
         to: ['feedback@baddriversofitaly.it'],
-        reply_to: email || undefined,
+        reply_to: email,
         subject: `Nuova segnalazione: ${typeLabel}`,
-        text: `Tipo: ${typeLabel}\nEmail: ${email || 'Non fornita'}\n\nDescrizione:\n${description}`,
+        text: `Tipo: ${typeLabel}\nEmail: ${email}\n\nDescrizione:\n${description}`,
         attachments: attachments.length > 0 ? attachments : undefined,
       }),
     })
