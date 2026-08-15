@@ -250,18 +250,14 @@ async function uploadOneFile(params: {
   await uploadFileToStorage(filePath, file, onProgress)
 
   const { data: inserted, error: insertError } = await supabase
-    .from('video_submissions')
-    .insert({
-      nickname,
-      location,
-      email,
-      note,
-      original_filename: file.name,
-      video_path: filePath,
-      status: 'da_valutare',
-      terms_accepted_at: new Date().toISOString(),
+    .rpc('insert_video_submission', {
+      p_nickname: nickname,
+      p_location: location,
+      p_email: email,
+      p_note: note,
+      p_original_filename: file.name,
+      p_video_path: filePath,
     })
-    .select('seq_number')
     .single()
   if (insertError) throw insertError
 
