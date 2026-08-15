@@ -258,7 +258,7 @@ async function uploadOneFile(params: {
       p_original_filename: file.name,
       p_video_path: filePath,
     })
-    .single()
+    .single<{ seq_number: number }>()
   if (insertError) throw insertError
 
   // Registro permanente: resta anche se il video viene poi eliminato dal pannello admin
