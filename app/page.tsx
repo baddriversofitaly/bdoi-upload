@@ -174,6 +174,10 @@ function ContactLink() {
         Hai bisogno di ulteriori informazioni?{' '}
         <Link href="/contatti" className="font-bold underline">Contattaci</Link>
       </p>
+      <p className="text-center text-sm text-white mt-1.5">
+        Hai un consiglio o hai trovato un problema?{' '}
+        <Link href="/feedback" className="font-bold underline">Segnalacelo</Link>
+      </p>
     </div>
   )
 }
@@ -268,6 +272,7 @@ async function uploadOneFile(params: {
     location,
     email,
     original_filename: file.name,
+    status: 'da_valutare',
   })
   if (logError) console.error('Errore nel registro permanente:', logError)
 }
