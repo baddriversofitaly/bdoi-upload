@@ -28,6 +28,14 @@ const TAB_LABELS: Record<Status, string> = {
   scartate: 'Scartate',
 }
 
+// Formati che i browser non riescono in genere a riprodurre nativamente nel tag <video>
+const POORLY_SUPPORTED_EXTENSIONS = ['avi', 'wmv', 'mkv', 'flv', 'mts', 'm2ts']
+
+function isPoorlySupportedFormat(path: string) {
+  const ext = path.split('.').pop()?.toLowerCase()
+  return ext ? POORLY_SUPPORTED_EXTENSIONS.includes(ext) : false
+}
+
 export default function AdminPage() {
   const router = useRouter()
   const [submissions, setSubmissions] = useState<Submission[]>([])
@@ -411,10 +419,21 @@ export default function AdminPage() {
               )}
 
               {s.signedUrl ? (
-                <video controls preload="metadata" className="w-full rounded mb-3 mt-3 max-h-96">
-                  <source src={s.signedUrl} />
-                  Il tuo browser non supporta la riproduzione video.
-                </video>
+                isPoorlySupportedFormat(s.video_path) ? (
+                  <div className="bg-amber-50 border border-amber-200 rounded mb-3 mt-3 px-4 py-6 text-center">
+                    <p className="text-sm text-amber-800">
+                      Anteprima non disponibile per i file{' '}
+                      <strong>.{s.video_path.split('.').pop()?.toUpperCase()}</strong> — i
+                      browser non riescono a riprodurli direttamente. Scarica il video per
+                      guardarlo con un player esterno (es. VLC).
+                    </p>
+                  </div>
+                ) : (
+                  <video controls preload="metadata" className="w-full rounded mb-3 mt-3 max-h-96">
+                    <source src={s.signedUrl} />
+                    Il tuo browser non supporta la riproduzione video.
+                  </video>
+                )
               ) : (
                 <p className="text-red-500 text-sm mb-3 mt-3">Impossibile caricare il video.</p>
               )}
