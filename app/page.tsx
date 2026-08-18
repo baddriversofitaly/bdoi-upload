@@ -427,7 +427,13 @@ function RenamedForm({ onBack }: { onBack: () => void }) {
               Video
             </label>
             <label className="flex items-center justify-center w-full rounded-md border-2 border-dashed border-white/60 bg-white/10 text-white text-sm py-4 cursor-pointer hover:bg-white/15 transition text-center">
-              <input type="file" accept="video/*" multiple onChange={handleFilesSelected} className="hidden" />
+              <input
+                type="file"
+                accept="video/*,.avi,.wmv,.mkv,.flv,.mts,.m2ts"
+                multiple
+                onChange={handleFilesSelected}
+                className="hidden"
+              />
               Scegli fino a {MAX_FILES_RENAMED} video (max {MAX_FILE_SIZE_MB}MB ciascuno)
             </label>
 
@@ -631,7 +637,7 @@ function NotRenamedForm({ onBack }: { onBack: () => void }) {
             <label className="flex items-center justify-center w-full rounded-md border-2 border-dashed border-white/60 bg-white/10 text-white text-sm py-4 cursor-pointer hover:bg-white/15 transition text-center">
               <input
                 type="file"
-                accept="video/*"
+                accept="video/*,.avi,.wmv,.mkv,.flv,.mts,.m2ts"
                 onChange={(e) => setFile(e.target.files?.[0] ?? null)}
                 className="hidden"
               />
