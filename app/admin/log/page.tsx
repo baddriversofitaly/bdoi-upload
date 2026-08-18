@@ -102,7 +102,7 @@ export default function AdminLogPage() {
   return (
     <main className="min-h-screen bg-[#EEF1F5] px-4 py-8">
       <div className="max-w-4xl mx-auto">
-        <Link href="/admin" className="text-sm text-[#1B4B93] underline font-medium">
+        <Link href="/admin/panel" className="text-sm text-[#1B4B93] underline font-medium">
           ← Torna al pannello video
         </Link>
 
