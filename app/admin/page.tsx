@@ -85,6 +85,11 @@ export default function AdminPage() {
   const deleteSubmission = async (submission: Submission) => {
     await supabase.storage.from('video-uploads').remove([submission.video_path])
     await supabase.from('video_submissions').delete().eq('id', submission.id)
+    // Il video sparisce dal pannello, ma il registro lo tiene traccia come "eliminato"
+    await supabase
+      .from('submission_log')
+      .update({ status: 'eliminato' })
+      .eq('seq_number', submission.seq_number)
   }
 
   const handleDelete = async (submission: Submission) => {
@@ -95,11 +100,23 @@ export default function AdminPage() {
     setSubmissions((prev) => prev.filter((s) => s.id !== submission.id))
   }
 
+  // Nel registro permanente teniamo solo 3 stati: "da_scaricare" conta ancora come
+  // "da_valutare" perché non è uno stato definitivo.
+  const mapToLogStatus = (status: Status): 'da_valutare' | 'scaricato' | 'scartato' => {
+    if (status === 'scaricati') return 'scaricato'
+    if (status === 'scartate') return 'scartato'
+    return 'da_valutare'
+  }
+
   const updateStatus = async (submission: Submission, newStatus: Status) => {
     setSubmissions((prev) =>
       prev.map((s) => (s.id === submission.id ? { ...s, status: newStatus } : s))
     )
     await supabase.from('video_submissions').update({ status: newStatus }).eq('id', submission.id)
+    await supabase
+      .from('submission_log')
+      .update({ status: mapToLogStatus(newStatus) })
+      .eq('seq_number', submission.seq_number)
   }
 
   const downloadSubmission = async (submission: Submission) => {
@@ -170,10 +187,15 @@ export default function AdminPage() {
     if (targets.length === 0) return
 
     const ids = targets.map((s) => s.id)
+    const seqNumbers = targets.map((s) => s.seq_number)
     setSubmissions((prev) =>
       prev.map((s) => (ids.includes(s.id) ? { ...s, status: newStatus } : s))
     )
     await supabase.from('video_submissions').update({ status: newStatus }).in('id', ids)
+    await supabase
+      .from('submission_log')
+      .update({ status: mapToLogStatus(newStatus) })
+      .in('seq_number', seqNumbers)
     setSelected(new Set())
   }
 
@@ -389,7 +411,7 @@ export default function AdminPage() {
               )}
 
               {s.signedUrl ? (
-                <video controls className="w-full rounded mb-3 mt-3 max-h-96">
+                <video controls preload="metadata" className="w-full rounded mb-3 mt-3 max-h-96">
                   <source src={s.signedUrl} />
                   Il tuo browser non supporta la riproduzione video.
                 </video>
