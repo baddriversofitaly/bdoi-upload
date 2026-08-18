@@ -249,20 +249,20 @@ async function uploadOneFile(params: {
 
   await uploadFileToStorage(filePath, file, onProgress)
 
+  // Usa la funzione RPC (security definer) invece di insert().select() diretto:
+  // gli utenti anonimi non hanno permesso di RILEGGERE la riga appena inserita
+  // (nessuna policy SELECT pubblica, per proteggere email/dati degli altri utenti),
+  // quindi .select().single() falliva silenziosamente per tutti gli upload.
   const { data: inserted, error: insertError } = await supabase
-    .from('video_submissions')
-    .insert({
-      nickname,
-      location,
-      email,
-      note,
-      original_filename: file.name,
-      video_path: filePath,
-      status: 'da_valutare',
-      terms_accepted_at: new Date().toISOString(),
+    .rpc('insert_video_submission', {
+      p_nickname: nickname,
+      p_location: location,
+      p_email: email,
+      p_note: note,
+      p_original_filename: file.name,
+      p_video_path: filePath,
     })
-    .select('seq_number')
-    .single()
+    .single<{ seq_number: number }>()
   if (insertError) throw insertError
 
   // Registro permanente: resta anche se il video viene poi eliminato dal pannello admin
