@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useState, useCallback } from 'react'
+import { useEffect, useState, useCallback, Suspense } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
 import Link from 'next/link'
 import { supabase } from '@/lib/supabaseClient'
@@ -37,6 +37,20 @@ function isPoorlySupportedFormat(path: string) {
 }
 
 export default function AdminPage() {
+  return (
+    <Suspense
+      fallback={
+        <main className="min-h-screen flex items-center justify-center">
+          <p className="text-gray-500">Caricamento...</p>
+        </main>
+      }
+    >
+      <AdminPanelContent />
+    </Suspense>
+  )
+}
+
+function AdminPanelContent() {
   const router = useRouter()
   const searchParams = useSearchParams()
   const initialTab = (searchParams.get('tab') as Status) || 'da_valutare'
