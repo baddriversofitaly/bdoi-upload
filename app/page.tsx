@@ -470,7 +470,7 @@ function RenamedForm({ onBack }: { onBack: () => void }) {
               <label htmlFor="renamed-confirmed" className="text-sm text-white">
                 Confermo che i nomi dei file qui sopra contengono già{' '}
                 <strong>località (obbligatorio)</strong> e <strong>nickname (facoltativo)</strong>{' '}
-                es. Nickname - Località (PV). Ho controllato prima di caricare.
+                <strong>(es. Nickname - Località (PV))</strong>. Ho controllato prima di caricare.
               </label>
             </div>
           )}
@@ -613,7 +613,7 @@ function NotRenamedForm({ onBack }: { onBack: () => void }) {
               required
               value={location}
               onChange={(e) => setLocation(e.target.value)}
-              placeholder="es. Codroipo (UD)"
+              placeholder="es. Codroipo"
               className="w-full rounded-md px-3 py-2 bg-white text-[#123769] focus:outline-none focus:ring-2 focus:ring-white placeholder:text-[#123769]/40"
             />
           </div>
