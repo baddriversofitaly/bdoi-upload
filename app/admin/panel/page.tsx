@@ -67,6 +67,7 @@ function AdminPanelContent() {
   const [checkingSession, setCheckingSession] = useState(true)
   const [tab, setTab] = useState<Status>(initialTab)
   const [selected, setSelected] = useState<Set<string>>(new Set())
+  const [loadingVideoId, setLoadingVideoId] = useState<string | null>(null)
   const [filterEmail, setFilterEmail] = useState('')
   const [filterSeqFrom, setFilterSeqFrom] = useState('')
   const [filterSeqTo, setFilterSeqTo] = useState('')
@@ -108,6 +109,10 @@ function AdminPanelContent() {
   const loadSubmissions = useCallback(async () => {
     setLoading(true)
 
+    // Non generiamo più un URL firmato per OGNI video qui: con molte clip,
+    // farlo per tutte insieme ad ogni apertura della pagina rallentava/bloccava
+    // il pannello. Ogni URL viene ora richiesto solo quando serve davvero
+    // (vedi loadVideoUrl), cliccando "Mostra video" o "Scarica".
     const { data, error } = await supabase
       .from('video_submissions')
       .select('*')
@@ -119,20 +124,34 @@ function AdminPanelContent() {
       return
     }
 
-    // Genera un URL firmato temporaneo per ogni video (bucket privato)
-    const withUrls = await Promise.all(
-      (data ?? []).map(async (row) => {
-        const { data: signed } = await supabase.storage
-          .from('video-uploads')
-          .createSignedUrl(row.video_path, 3600) // valido 1 ora
-
-        return { ...row, signedUrl: signed?.signedUrl }
-      })
-    )
-
-    setSubmissions(withUrls)
+    setSubmissions(data ?? [])
     setLoading(false)
   }, [])
+
+  // Richiede l'URL firmato di UN SOLO video, solo quando serve davvero
+  const getSignedUrl = async (submission: Submission): Promise<string | null> => {
+    if (submission.signedUrl) return submission.signedUrl
+
+    const { data: signed, error } = await supabase.storage
+      .from('video-uploads')
+      .createSignedUrl(submission.video_path, 3600) // valido 1 ora
+
+    if (error || !signed?.signedUrl) {
+      console.error(error)
+      return null
+    }
+
+    setSubmissions((prev) =>
+      prev.map((s) => (s.id === submission.id ? { ...s, signedUrl: signed.signedUrl } : s))
+    )
+    return signed.signedUrl
+  }
+
+  const handleShowVideo = async (submission: Submission) => {
+    setLoadingVideoId(submission.id)
+    await getSignedUrl(submission)
+    setLoadingVideoId(null)
+  }
 
   useEffect(() => {
     if (!checkingSession) {
@@ -193,7 +212,8 @@ function AdminPanelContent() {
   }
 
   const downloadSubmission = async (submission: Submission) => {
-    if (!submission.signedUrl) return
+    const url = await getSignedUrl(submission)
+    if (!url) return
 
     const sanitize = (name: string) => name.replace(/[\\/:*?"<>|]/g, '-').trim()
     const ext = submission.video_path.split('.').pop()
@@ -211,7 +231,7 @@ function AdminPanelContent() {
         ? `${seq} - ${sanitize(submission.original_filename)}`
         : `${seq} - ${submission.video_path}`
 
-    const response = await fetch(submission.signedUrl)
+    const response = await fetch(url)
     const blob = await response.blob()
     const blobUrl = URL.createObjectURL(blob)
 
@@ -575,7 +595,13 @@ function AdminPanelContent() {
                   </video>
                 )
               ) : (
-                <p className="text-red-500 text-sm mb-3 mt-3">Impossibile caricare il video.</p>
+                <button
+                  onClick={() => handleShowVideo(s)}
+                  disabled={loadingVideoId === s.id}
+                  className="w-full rounded mb-3 mt-3 py-6 bg-gray-50 border border-dashed border-gray-300 text-gray-500 text-sm hover:bg-gray-100 transition disabled:opacity-60"
+                >
+                  {loadingVideoId === s.id ? 'Caricamento...' : '▶ Mostra video'}
+                </button>
               )}
 
               {/* Classificazione: tipo infrazione, tipo veicolo, provincia */}
@@ -630,14 +656,12 @@ function AdminPanelContent() {
                   </>
                 ) : (
                   <>
-                    {s.signedUrl && (
-                      <button
-                        onClick={() => handleDownload(s)}
-                        className="bg-[#1B4B93] text-white px-4 py-2 rounded-full text-sm font-bold uppercase tracking-wide"
-                      >
-                        Scarica
-                      </button>
-                    )}
+                    <button
+                      onClick={() => handleDownload(s)}
+                      className="bg-[#1B4B93] text-white px-4 py-2 rounded-full text-sm font-bold uppercase tracking-wide"
+                    >
+                      Scarica
+                    </button>
                     <button
                       onClick={() => updateStatus(s, 'scartate')}
                       className="bg-amber-400 text-[#123769] px-4 py-2 rounded-full text-sm font-bold uppercase tracking-wide"
