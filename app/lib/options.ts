@@ -13,9 +13,11 @@ export const VIOLATION_TYPES = [
   'Mancato rispetto della segnaletica',
   'Sosta irregolare in corsia di emergenza',
   "Mancata gestione dell'angolo cieco",
+  'Animali',
+  'Cartellino rosso',
 ]
 
-export const VEHICLE_TYPES = ['Auto', 'Moto', 'Bus', 'Furgone', 'Camion']
+export const VEHICLE_TYPES = ['Auto', 'Moto', 'Bus', 'Furgone', 'Camion', 'Pedone', 'Monopattino', 'Bicicletta']
 
 // Le 107 sigle ufficiali delle province italiane, in ordine alfabetico per nome provincia
 export const PROVINCES: { code: string; name: string }[] = [

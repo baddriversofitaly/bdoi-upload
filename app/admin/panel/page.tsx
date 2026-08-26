@@ -609,9 +609,10 @@ function AdminPanelContent() {
                 <div>
                   <label className="block text-xs font-semibold text-gray-500 mb-1">Tipo infrazione</label>
                   <SearchableSelect
+                    multiple
                     options={VIOLATION_OPTIONS}
-                    value={s.violation_type ?? ''}
-                    onChange={(v) => updateClassification(s, 'violation_type', v)}
+                    value={s.violation_type ? s.violation_type.split(',').map((v) => v.trim()).filter(Boolean) : []}
+                    onChange={(values) => updateClassification(s, 'violation_type', values.join(', '))}
                     placeholder="Non specificato"
                     variant="white"
                   />
@@ -619,9 +620,10 @@ function AdminPanelContent() {
                 <div>
                   <label className="block text-xs font-semibold text-gray-500 mb-1">Tipo veicolo</label>
                   <SearchableSelect
+                    multiple
                     options={VEHICLE_OPTIONS}
-                    value={s.vehicle_type ?? ''}
-                    onChange={(v) => updateClassification(s, 'vehicle_type', v)}
+                    value={s.vehicle_type ? s.vehicle_type.split(',').map((v) => v.trim()).filter(Boolean) : []}
+                    onChange={(values) => updateClassification(s, 'vehicle_type', values.join(', '))}
                     placeholder="Non specificato"
                     variant="white"
                   />
