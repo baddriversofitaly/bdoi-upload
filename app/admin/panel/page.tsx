@@ -4,6 +4,11 @@ import { useEffect, useState, useCallback, Suspense } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
 import Link from 'next/link'
 import { supabase } from '@/lib/supabaseClient'
+import SearchableSelect from '../../components/SearchableSelect'
+import { VIOLATION_TYPES, VEHICLE_TYPES, PROVINCE_OPTIONS } from '../../lib/options'
+
+const VIOLATION_OPTIONS = VIOLATION_TYPES.map((v) => ({ value: v, label: v }))
+const VEHICLE_OPTIONS = VEHICLE_TYPES.map((v) => ({ value: v, label: v }))
 
 type Status = 'da_valutare' | 'da_scaricare' | 'scaricati' | 'scartate'
 
@@ -18,6 +23,9 @@ type Submission = {
   video_path: string
   created_at: string
   status: Status
+  violation_type: string | null
+  vehicle_type: string | null
+  provincia: string | null
   signedUrl?: string
 }
 
@@ -167,6 +175,23 @@ function AdminPanelContent() {
       .eq('seq_number', submission.seq_number)
   }
 
+  // Aggiorna una classificazione (tipo infrazione / veicolo / provincia) e la "congela"
+  // subito anche nel registro permanente, così resta anche dopo un'eventuale eliminazione.
+  const updateClassification = async (
+    submission: Submission,
+    field: 'violation_type' | 'vehicle_type' | 'provincia',
+    value: string
+  ) => {
+    setSubmissions((prev) =>
+      prev.map((s) => (s.id === submission.id ? { ...s, [field]: value } : s))
+    )
+    await supabase.from('video_submissions').update({ [field]: value }).eq('id', submission.id)
+    await supabase
+      .from('submission_log')
+      .update({ [field]: value })
+      .eq('seq_number', submission.seq_number)
+  }
+
   const downloadSubmission = async (submission: Submission) => {
     if (!submission.signedUrl) return
 
@@ -177,7 +202,11 @@ function AdminPanelContent() {
     // Il numero progressivo va sempre in testa al nome, per evitare sovrascritture
     // quando più invii hanno lo stesso nickname/località o lo stesso nome file originale.
     const fileName = submission.nickname
-      ? `${seq} - ${sanitize(`${submission.nickname} - ${submission.location}`)}.${ext}`
+      ? `${seq} - ${sanitize(
+          `${submission.nickname} - ${submission.location}${
+            submission.provincia ? ` (${submission.provincia})` : ''
+          }`
+        )}.${ext}`
       : submission.original_filename
         ? `${seq} - ${sanitize(submission.original_filename)}`
         : `${seq} - ${submission.video_path}`
@@ -548,6 +577,40 @@ function AdminPanelContent() {
               ) : (
                 <p className="text-red-500 text-sm mb-3 mt-3">Impossibile caricare il video.</p>
               )}
+
+              {/* Classificazione: tipo infrazione, tipo veicolo, provincia */}
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-2 mb-3">
+                <div>
+                  <label className="block text-xs font-semibold text-gray-500 mb-1">Tipo infrazione</label>
+                  <SearchableSelect
+                    options={VIOLATION_OPTIONS}
+                    value={s.violation_type ?? ''}
+                    onChange={(v) => updateClassification(s, 'violation_type', v)}
+                    placeholder="Non specificato"
+                    variant="white"
+                  />
+                </div>
+                <div>
+                  <label className="block text-xs font-semibold text-gray-500 mb-1">Tipo veicolo</label>
+                  <SearchableSelect
+                    options={VEHICLE_OPTIONS}
+                    value={s.vehicle_type ?? ''}
+                    onChange={(v) => updateClassification(s, 'vehicle_type', v)}
+                    placeholder="Non specificato"
+                    variant="white"
+                  />
+                </div>
+                <div>
+                  <label className="block text-xs font-semibold text-gray-500 mb-1">Provincia</label>
+                  <SearchableSelect
+                    options={PROVINCE_OPTIONS}
+                    value={s.provincia ?? ''}
+                    onChange={(v) => updateClassification(s, 'provincia', v)}
+                    placeholder="Non specificata"
+                    variant="white"
+                  />
+                </div>
+              </div>
 
               <div className="flex gap-3 flex-wrap">
                 {s.status === 'da_valutare' ? (

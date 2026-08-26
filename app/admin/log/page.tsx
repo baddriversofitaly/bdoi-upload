@@ -13,6 +13,9 @@ type LogEntry = {
   original_filename: string | null
   email: string
   status: 'da_valutare' | 'scaricato' | 'scartato'
+  violation_type: string | null
+  vehicle_type: string | null
+  provincia: string | null
   created_at: string
 }
 
@@ -66,12 +69,18 @@ export default function AdminLogPage() {
   }, [checkingSession, loadEntries])
 
   const handleExportCsv = () => {
-    const header = ['Numero', 'Nome file', 'Nickname', 'Località', 'Email', 'Stato', 'Data invio']
+    const header = [
+      'Numero', 'Nome file', 'Nickname', 'Località', 'Provincia',
+      'Tipo infrazione', 'Tipo veicolo', 'Email', 'Stato', 'Data invio',
+    ]
     const rows = entries.map((e) => [
       String(e.seq_number).padStart(6, '0'),
       e.original_filename ?? '—',
       e.nickname ?? '—',
       e.location ?? '—',
+      e.provincia ?? '—',
+      e.violation_type ?? '—',
+      e.vehicle_type ?? '—',
       e.email,
       STATUS_LABELS[e.status] ?? e.status,
       new Date(e.created_at).toLocaleString('it-IT'),
@@ -132,6 +141,9 @@ export default function AdminLogPage() {
                 <th className="px-4 py-3 font-semibold">Nome file</th>
                 <th className="px-4 py-3 font-semibold">Nickname</th>
                 <th className="px-4 py-3 font-semibold">Località</th>
+                <th className="px-4 py-3 font-semibold">Provincia</th>
+                <th className="px-4 py-3 font-semibold">Infrazione</th>
+                <th className="px-4 py-3 font-semibold">Veicolo</th>
                 <th className="px-4 py-3 font-semibold">Email</th>
                 <th className="px-4 py-3 font-semibold">Stato</th>
                 <th className="px-4 py-3 font-semibold">Data invio</th>
@@ -148,6 +160,9 @@ export default function AdminLogPage() {
                   </td>
                   <td className="px-4 py-2.5 text-gray-700">{e.nickname ?? '—'}</td>
                   <td className="px-4 py-2.5 text-gray-700">{e.location ?? '—'}</td>
+                  <td className="px-4 py-2.5 text-gray-700">{e.provincia ?? '—'}</td>
+                  <td className="px-4 py-2.5 text-gray-700">{e.violation_type ?? '—'}</td>
+                  <td className="px-4 py-2.5 text-gray-700">{e.vehicle_type ?? '—'}</td>
                   <td className="px-4 py-2.5 text-gray-700">{e.email}</td>
                   <td className="px-4 py-2.5">
                     <span className={`px-2 py-1 rounded-full text-xs font-semibold ${STATUS_COLORS[e.status] ?? 'bg-gray-100 text-gray-700'}`}>

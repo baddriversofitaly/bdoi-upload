@@ -5,6 +5,8 @@ import Image from 'next/image'
 import Link from 'next/link'
 import { supabase } from '@/lib/supabaseClient'
 import SocialIcons from './components/SocialIcons'
+import SearchableSelect from './components/SearchableSelect'
+import { PROVINCE_OPTIONS } from './lib/options'
 
 const MAX_FILE_SIZE_MB = 300
 const MAX_FILES_RENAMED = 5
@@ -241,9 +243,10 @@ async function uploadOneFile(params: {
   location: string | null
   email: string
   note: string | null
+  provincia?: string | null
   onProgress?: (percent: number) => void
 }) {
-  const { file, nickname, location, email, note, onProgress } = params
+  const { file, nickname, location, email, note, provincia, onProgress } = params
   const fileExt = file.name.split('.').pop()
   const filePath = `${Date.now()}-${Math.random().toString(36).slice(2)}.${fileExt}`
 
@@ -261,6 +264,7 @@ async function uploadOneFile(params: {
       p_note: note,
       p_original_filename: file.name,
       p_video_path: filePath,
+      p_provincia: provincia ?? null,
     })
     .single<{ seq_number: number }>()
   if (insertError) throw insertError
@@ -272,6 +276,7 @@ async function uploadOneFile(params: {
     location,
     email,
     original_filename: file.name,
+    provincia: provincia ?? null,
     status: 'da_valutare',
   })
   if (logError) console.error('Errore nel registro permanente:', logError)
@@ -464,8 +469,8 @@ function RenamedForm({ onBack }: { onBack: () => void }) {
               />
               <label htmlFor="renamed-confirmed" className="text-sm text-white">
                 Confermo che i nomi dei file qui sopra contengono già{' '}
-                <strong>località (obbligatorio)</strong> e <strong>nickname (facoltativo)</strong>.
-                Ho controllato prima di caricare.
+                <strong>località (obbligatorio)</strong> e <strong>nickname (facoltativo)</strong>{' '}
+                es. Nickname - Località (PV). Ho controllato prima di caricare.
               </label>
             </div>
           )}
@@ -511,6 +516,7 @@ function NotRenamedForm({ onBack }: { onBack: () => void }) {
   const [location, setLocation] = useState('')
   const [email, setEmail] = useState('')
   const [note, setNote] = useState('')
+  const [provincia, setProvincia] = useState('')
   const [file, setFile] = useState<File | null>(null)
   const [status, setStatus] = useState<SubmitStatus>('idle')
   const [errorMessage, setErrorMessage] = useState('')
@@ -526,6 +532,10 @@ function NotRenamedForm({ onBack }: { onBack: () => void }) {
     }
     if (!location.trim()) {
       setErrorMessage('Inserisci la località.')
+      return
+    }
+    if (!provincia) {
+      setErrorMessage('Seleziona la provincia.')
       return
     }
     if (file.size > MAX_FILE_SIZE_MB * 1024 * 1024) {
@@ -547,6 +557,7 @@ function NotRenamedForm({ onBack }: { onBack: () => void }) {
         location,
         email,
         note: note || null,
+        provincia,
         onProgress: setUploadPercent,
       })
       await sendConfirmationEmail(email)
@@ -604,6 +615,18 @@ function NotRenamedForm({ onBack }: { onBack: () => void }) {
               onChange={(e) => setLocation(e.target.value)}
               placeholder="es. Codroipo (UD)"
               className="w-full rounded-md px-3 py-2 bg-white text-[#123769] focus:outline-none focus:ring-2 focus:ring-white placeholder:text-[#123769]/40"
+            />
+          </div>
+
+          <div>
+            <label className="block text-xs font-bold uppercase tracking-wide text-white/90 mb-1">
+              Provincia <span className="font-normal normal-case text-white/60">(obbligatoria)</span>
+            </label>
+            <SearchableSelect
+              options={PROVINCE_OPTIONS}
+              value={provincia}
+              onChange={setProvincia}
+              placeholder="Cerca la provincia..."
             />
           </div>
 
