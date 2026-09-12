@@ -113,18 +113,33 @@ function AdminPanelContent() {
     // farlo per tutte insieme ad ogni apertura della pagina rallentava/bloccava
     // il pannello. Ogni URL viene ora richiesto solo quando serve davvero
     // (vedi loadVideoUrl), cliccando "Mostra video" o "Scarica".
-    const { data, error } = await supabase
-      .from('video_submissions')
-      .select('*')
-      .order('created_at', { ascending: true })
+    //
+    // Supabase limita ogni singola richiesta a 1000 righe: con più clip di
+    // così, recuperiamo tutto a blocchi di 1000 finché non finiscono.
+    const allRows: Submission[] = []
+    const batchSize = 1000
+    let from = 0
 
-    if (error) {
-      console.error(error)
-      setLoading(false)
-      return
+    while (true) {
+      const { data, error } = await supabase
+        .from('video_submissions')
+        .select('*')
+        .order('created_at', { ascending: true })
+        .range(from, from + batchSize - 1)
+
+      if (error) {
+        console.error(error)
+        setLoading(false)
+        return
+      }
+      if (!data || data.length === 0) break
+
+      allRows.push(...data)
+      if (data.length < batchSize) break
+      from += batchSize
     }
 
-    setSubmissions(data ?? [])
+    setSubmissions(allRows)
     setLoading(false)
   }, [])
 
