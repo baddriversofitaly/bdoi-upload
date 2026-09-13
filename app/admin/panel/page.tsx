@@ -6,6 +6,7 @@ import Link from 'next/link'
 import { supabase } from '@/lib/supabaseClient'
 import SearchableSelect from '../../components/SearchableSelect'
 import { VIOLATION_TYPES, VEHICLE_TYPES, PROVINCE_OPTIONS } from '../../lib/options'
+import JSZip from 'jszip'
 
 const VIOLATION_OPTIONS = VIOLATION_TYPES.map((v) => ({ value: v, label: v }))
 const VEHICLE_OPTIONS = VEHICLE_TYPES.map((v) => ({ value: v, label: v }))
@@ -68,6 +69,8 @@ function AdminPanelContent() {
   const [tab, setTab] = useState<Status>(initialTab)
   const [selected, setSelected] = useState<Set<string>>(new Set())
   const [loadingVideoId, setLoadingVideoId] = useState<string | null>(null)
+  const [zipping, setZipping] = useState(false)
+  const [zipProgress, setZipProgress] = useState({ current: 0, total: 0 })
   const [filterEmail, setFilterEmail] = useState('')
   const [filterSeqFrom, setFilterSeqFrom] = useState('')
   const [filterSeqTo, setFilterSeqTo] = useState('')
@@ -226,17 +229,14 @@ function AdminPanelContent() {
       .eq('seq_number', submission.seq_number)
   }
 
-  const downloadSubmission = async (submission: Submission) => {
-    const url = await getSignedUrl(submission)
-    if (!url) return
-
+  const getDownloadFileName = (submission: Submission) => {
     const sanitize = (name: string) => name.replace(/[\\/:*?"<>|]/g, '-').trim()
     const ext = submission.video_path.split('.').pop()
     const seq = String(submission.seq_number).padStart(6, '0')
 
     // Il numero progressivo va sempre in testa al nome, per evitare sovrascritture
     // quando più invii hanno lo stesso nickname/località o lo stesso nome file originale.
-    const fileName = submission.nickname
+    return submission.nickname
       ? `${seq} - ${sanitize(
           `${submission.nickname} - ${submission.location}${
             submission.provincia ? ` (${submission.provincia})` : ''
@@ -245,6 +245,13 @@ function AdminPanelContent() {
       : submission.original_filename
         ? `${seq} - ${sanitize(submission.original_filename)}`
         : `${seq} - ${submission.video_path}`
+  }
+
+  const downloadSubmission = async (submission: Submission) => {
+    const url = await getSignedUrl(submission)
+    if (!url) return
+
+    const fileName = getDownloadFileName(submission)
 
     const response = await fetch(url)
     const blob = await response.blob()
@@ -315,18 +322,64 @@ function AdminPanelContent() {
     const targets = list.filter((s) => selected.has(s.id))
     if (targets.length === 0) return
 
-    for (const submission of targets) {
+    // Un solo video selezionato: scarica il file così com'è, non serve uno ZIP
+    if (targets.length === 1) {
       try {
-        await downloadSubmission(submission)
-        if (submission.status === 'da_scaricare') {
-          await updateStatus(submission, 'scaricati')
+        await downloadSubmission(targets[0])
+        if (targets[0].status === 'da_scaricare') {
+          await updateStatus(targets[0], 'scaricati')
         }
       } catch (err) {
         console.error(err)
-        alert(`Errore durante il download di "${submission.original_filename ?? submission.video_path}".`)
+        alert('Errore durante il download.')
       }
+      setSelected(new Set())
+      return
     }
-    setSelected(new Set())
+
+    setZipping(true)
+    setZipProgress({ current: 0, total: targets.length })
+
+    try {
+      const zip = new JSZip()
+
+      for (let i = 0; i < targets.length; i++) {
+        const submission = targets[i]
+        setZipProgress({ current: i + 1, total: targets.length })
+
+        const url = await getSignedUrl(submission)
+        if (!url) continue
+
+        const response = await fetch(url)
+        const blob = await response.blob()
+        zip.file(getDownloadFileName(submission), blob)
+      }
+
+      const zipBlob = await zip.generateAsync({ type: 'blob' })
+      const zipUrl = URL.createObjectURL(zipBlob)
+      const dateLabel = new Date().toISOString().slice(0, 10)
+
+      const a = document.createElement('a')
+      a.href = zipUrl
+      a.download = `bdoi-clip-${dateLabel}.zip`
+      document.body.appendChild(a)
+      a.click()
+      a.remove()
+      URL.revokeObjectURL(zipUrl)
+
+      // Le clip scaricate da "Da scaricare" passano automaticamente a "Scaricati"
+      for (const submission of targets) {
+        if (submission.status === 'da_scaricare') {
+          await updateStatus(submission, 'scaricati')
+        }
+      }
+    } catch (err) {
+      console.error(err)
+      alert('Errore durante la creazione dello ZIP. Riprova.')
+    } finally {
+      setZipping(false)
+      setSelected(new Set())
+    }
   }
 
   const handleBulkDelete = async (list: Submission[]) => {
@@ -516,9 +569,14 @@ function AdminPanelContent() {
                   <>
                     <button
                       onClick={() => handleBulkDownload(visible)}
-                      className="bg-[#1B4B93] text-white px-3 py-1.5 rounded-full text-xs font-bold uppercase tracking-wide"
+                      disabled={zipping}
+                      className="bg-[#1B4B93] text-white px-3 py-1.5 rounded-full text-xs font-bold uppercase tracking-wide disabled:opacity-60"
                     >
-                      Scarica
+                      {zipping
+                        ? `Comprimendo ${zipProgress.current}/${zipProgress.total}...`
+                        : selected.size > 1
+                          ? 'Scarica selezionati (ZIP)'
+                          : 'Scarica'}
                     </button>
                     <button
                       onClick={() => handleBulkStatus(visible, 'scartate')}
