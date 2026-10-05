@@ -19,52 +19,36 @@ export default function MappaPage() {
             e l&apos;area prove pratiche di guida sicura.
           </p>
 
-          <div className="bg-white rounded-xl p-2 md:p-3 mb-6">
+          <ol className="space-y-3 mb-6">
+            <li className="flex gap-3">
+              <span className="shrink-0 w-7 h-7 rounded-full bg-red-600 text-white font-bold text-sm flex items-center justify-center">1</span>
+              <span className="text-white/90 text-sm leading-relaxed">
+                Devi raggiungere lo stand <strong>Bad Drivers of Italy</strong>? Segui il percorso <strong className="text-red-400">ROSSO</strong>: passando per il Padiglione 1 raggiungi lo stand <strong>A22</strong> nel Padiglione 2.
+              </span>
+            </li>
+            <li className="flex gap-3">
+              <span className="shrink-0 w-7 h-7 rounded-full bg-blue-600 text-white font-bold text-sm flex items-center justify-center">2</span>
+              <span className="text-white/90 text-sm leading-relaxed">
+                Devi raggiungere l&apos;<strong>area esterna guida sicura</strong> dallo stand Bad Drivers of Italy? Segui il percorso <strong className="text-blue-300">BLU</strong>: raggiungi il Gate 4 e poi gira a destra.
+              </span>
+            </li>
+            <li className="flex gap-3">
+              <span className="shrink-0 w-7 h-7 rounded-full bg-green-600 text-white font-bold text-sm flex items-center justify-center">3</span>
+              <span className="text-white/90 text-sm leading-relaxed">
+                Devi raggiungere l&apos;area esterna dall&apos;<strong>ingresso della fiera</strong>? Segui il percorso <strong className="text-green-400">VERDE</strong>: attraversa il Padiglione 5, raggiungi il Gate 4 e poi gira a destra.
+              </span>
+            </li>
+          </ol>
+
+          <div className="bg-white rounded-xl p-2 md:p-3">
             <Image
-              src="/mappa-reas.jpg"
-              alt="Piantina della Fiera REAS con il percorso per raggiungere lo stand Bad Drivers of Italy e l'area guida sicura"
+              src="/mappa-reas.png"
+              alt="Piantina della Fiera REAS con i percorsi per raggiungere lo stand Bad Drivers of Italy e l'area guida sicura"
               width={1200}
               height={900}
               className="w-full h-auto rounded-lg"
               priority
             />
-          </div>
-
-          <h2 className="text-white font-bold uppercase text-sm tracking-wide mb-3">
-            Come arrivare
-          </h2>
-          <ol className="space-y-3 mb-2">
-            <li className="flex gap-3">
-              <span className="shrink-0 w-7 h-7 rounded-full bg-white text-[#1B4B93] font-bold text-sm flex items-center justify-center">1</span>
-              <span className="text-white/90 text-sm leading-relaxed">
-                Entra dall&apos;<strong>Ingresso Fiera REAS</strong> e dirigiti verso il <strong>Cancello Gate 4</strong>, tra il Pad. Hall 6/7bis e il Pad. Hall 4.
-              </span>
-            </li>
-            <li className="flex gap-3">
-              <span className="shrink-0 w-7 h-7 rounded-full bg-white text-[#1B4B93] font-bold text-sm flex items-center justify-center">2</span>
-              <span className="text-white/90 text-sm leading-relaxed">
-                Attraversa il <strong>Pad. Hall 4</strong> seguendo il percorso tratteggiato fino alla zona tra Hall 4 e Hall 2.
-              </span>
-            </li>
-            <li className="flex gap-3">
-              <span className="shrink-0 w-7 h-7 rounded-full bg-white text-[#1B4B93] font-bold text-sm flex items-center justify-center">3</span>
-              <span className="text-white/90 text-sm leading-relaxed">
-                Troverai il nostro <strong>stand A22</strong>, nell&apos;area interna tra il Pad. Hall 2 e il Pad. Hall 1.
-              </span>
-            </li>
-            <li className="flex gap-3">
-              <span className="shrink-0 w-7 h-7 rounded-full bg-white text-[#1B4B93] font-bold text-sm flex items-center justify-center">4</span>
-              <span className="text-white/90 text-sm leading-relaxed">
-                Per le <strong>prove pratiche di guida sicura</strong>, torna verso il Cancello Gate 4: l&apos;area esterna dedicata si trova appena fuori, sopra il Pad. Hall 4.
-              </span>
-            </li>
-          </ol>
-
-          <div className="mt-5 bg-white/10 rounded-lg px-4 py-3">
-            <p className="text-white/80 text-xs leading-relaxed">
-              In alternativa, dall&apos;ingresso principale puoi anche passare per il Foyer e il Pad. Hall 1,
-              raggiungendo lo stand A22 da sud (vedi il secondo percorso tratteggiato in piantina).
-            </p>
           </div>
         </div>
 
