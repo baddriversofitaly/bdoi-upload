@@ -1,4 +1,16 @@
-export const VIOLATION_TYPES = [
+// Ordina in ordine alfabetico (italiano) senza modificare l'array originale
+const sortAlpha = (list: string[]) => [...list].sort((a, b) => a.localeCompare(b, 'it'))
+
+// "Evento": ciò che succede nella clip (ex "Tipo infrazione")
+const VIOLATION_TYPES_RAW = [
+  'Condizioni del manto stradale',
+  'Evento atmosferico',
+  'Forze dell\'ordine',
+  'Guida pericolosa',
+  'Intralcio alla circolazione',
+  'Road rage',
+  'Segnaletica inadeguata',
+  'Sinistro',
   'Mancata precedenza',
   'Mancata precedenza a pedoni',
   'Sorpasso vietato',
@@ -17,7 +29,21 @@ export const VIOLATION_TYPES = [
   'Cartellino rosso',
 ]
 
-export const VEHICLE_TYPES = ['Auto', 'Moto', 'Bus', 'Furgone', 'Camion', 'Pedone', 'Monopattino', 'Bicicletta']
+export const VIOLATION_TYPES = sortAlpha(VIOLATION_TYPES_RAW)
+
+// "Utenti coinvolti" e "POV dashcam" usano le stesse voci
+export const VEHICLE_TYPES = sortAlpha([
+  'Ambulanza/VVF',
+  'Auto',
+  'Bicicletta',
+  'Bus',
+  'Camion',
+  'Camper/caravan',
+  'Furgone',
+  'Monopattino',
+  'Moto/scooter',
+  'Pedone',
+])
 
 // Le 107 sigle ufficiali delle province italiane, in ordine alfabetico per nome provincia
 export const PROVINCES: { code: string; name: string }[] = [
@@ -52,6 +78,7 @@ export const PROVINCES: { code: string; name: string }[] = [
   { code: 'KR', name: 'Crotone' },
   { code: 'CN', name: 'Cuneo' },
   { code: 'EN', name: 'Enna' },
+  { code: 'EU', name: 'Estero' },
   { code: 'FM', name: 'Fermo' },
   { code: 'FE', name: 'Ferrara' },
   { code: 'FI', name: 'Firenze' },
@@ -130,7 +157,10 @@ export const PROVINCES: { code: string; name: string }[] = [
   { code: 'VT', name: 'Viterbo' },
 ]
 
-export const PROVINCE_OPTIONS = PROVINCES.map((p) => ({
-  value: p.code,
-  label: `${p.name} (${p.code})`,
-}))
+// In ordine alfabetico per nome (include "Estero (EU)" per i video girati fuori dall'Italia)
+export const PROVINCE_OPTIONS = [...PROVINCES]
+  .sort((a, b) => a.name.localeCompare(b.name, 'it'))
+  .map((p) => ({
+    value: p.code,
+    label: `${p.name} (${p.code})`,
+  }))

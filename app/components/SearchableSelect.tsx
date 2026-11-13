@@ -11,6 +11,7 @@ type SingleProps = {
   placeholder?: string
   variant?: 'light' | 'white'
   multiple?: false
+  allowCustom?: boolean
 }
 
 type MultiProps = {
@@ -20,10 +21,19 @@ type MultiProps = {
   placeholder?: string
   variant?: 'light' | 'white'
   multiple: true
+  allowCustom?: boolean
 }
 
 export default function SearchableSelect(props: SingleProps | MultiProps) {
-  const { options, placeholder = 'Seleziona...', variant = 'light' } = props
+  const { options: baseOptions, placeholder = 'Seleziona...', variant = 'light', allowCustom } = props
+
+  // Le voci personalizzate già scelte (non presenti nella lista di base) restano
+  // visibili e selezionabili, così non spariscono dall'etichetta.
+  const selectedValues = props.multiple ? props.value : props.value ? [props.value] : []
+  const extraOptions = selectedValues
+    .filter((v) => !baseOptions.some((o) => o.value === v))
+    .map((v) => ({ value: v, label: v }))
+  const options = [...baseOptions, ...extraOptions]
   const [open, setOpen] = useState(false)
   const [query, setQuery] = useState('')
   const ref = useRef<HTMLDivElement>(null)
@@ -40,6 +50,24 @@ export default function SearchableSelect(props: SingleProps | MultiProps) {
   }, [])
 
   const filtered = options.filter((o) => o.label.toLowerCase().includes(query.toLowerCase()))
+
+  // Voce personalizzata: la virgola è il separatore dei valori multipli, quindi la togliamo
+  const customValue = query.trim().replace(/,/g, ' ')
+  const canAddCustom =
+    !!allowCustom &&
+    customValue.length > 0 &&
+    !options.some((o) => o.label.toLowerCase() === customValue.toLowerCase())
+
+  const handleAddCustom = () => {
+    if (props.multiple) {
+      if (!props.value.includes(customValue)) props.onChange([...props.value, customValue])
+      setQuery('')
+    } else {
+      props.onChange(customValue)
+      setOpen(false)
+      setQuery('')
+    }
+  }
 
   const isSelected = (optValue: string) =>
     props.multiple ? props.value.includes(optValue) : props.value === optValue
@@ -96,7 +124,16 @@ export default function SearchableSelect(props: SingleProps | MultiProps) {
             className="px-3 py-2 text-sm border-b border-gray-200 text-[#123769] focus:outline-none"
           />
           <div className="max-h-56 overflow-y-auto">
-            {filtered.length === 0 && (
+            {canAddCustom && (
+              <button
+                type="button"
+                onClick={handleAddCustom}
+                className="w-full text-left px-3 py-2 text-sm font-semibold text-[#1B4B93] hover:bg-blue-50 border-b border-gray-100"
+              >
+                ＋ Aggiungi &ldquo;{customValue}&rdquo;
+              </button>
+            )}
+            {filtered.length === 0 && !canAddCustom && (
               <p className="px-3 py-2 text-sm text-gray-400">Nessun risultato</p>
             )}
             {filtered.map((o) => {
