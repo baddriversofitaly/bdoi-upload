@@ -1,13 +1,52 @@
 import { NextRequest, NextResponse } from 'next/server'
- 
+
+// I nomi dei file li sceglie l'utente: vanno "ripuliti" prima di finire nell'HTML dell'email
+function escapeHtml(text: string) {
+  return text
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#39;')
+}
+
 export async function POST(request: NextRequest) {
   try {
-    const { email } = await request.json()
- 
+    const { email, fileNames } = await request.json()
+
     if (!email) {
       return NextResponse.json({ error: 'Email mancante' }, { status: 400 })
     }
- 
+
+    // Elenco clip ricevute (massimo 10 nomi, ciascuno accorciato se troppo lungo)
+    const safeNames: string[] = Array.isArray(fileNames)
+      ? fileNames
+          .filter((n: unknown): n is string => typeof n === 'string' && n.trim().length > 0)
+          .slice(0, 10)
+          .map((n: string) => escapeHtml(n.length > 120 ? `${n.slice(0, 117)}...` : n))
+      : []
+
+    const filesBlock =
+      safeNames.length > 0
+        ? `<tr>
+                  <td align="center" style="padding-bottom: 22px;">
+                    <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background-color:rgba(255,255,255,0.12); border-radius:10px;">
+                      <tr>
+                        <td style="padding: 12px 16px;">
+                          <span style="color:rgba(255,255,255,0.85); font-size:12px; font-weight:bold; text-transform:uppercase; letter-spacing:0.5px; font-family: Arial, Helvetica, sans-serif;">${safeNames.length === 1 ? 'Clip ricevuta' : 'Clip ricevute'}</span>
+                          ${safeNames
+                            .map(
+                              (n) =>
+                                `<div style="color:#FFFFFF; font-size:14px; line-height:1.5; padding-top:6px; word-break:break-all; font-family: Arial, Helvetica, sans-serif;">&bull; ${n}</div>`
+                            )
+                            .join('')}
+                        </td>
+                      </tr>
+                    </table>
+                  </td>
+                </tr>`
+        : ''
+
     const response = await fetch('https://api.resend.com/emails', {
       method: 'POST',
       headers: {
@@ -53,6 +92,7 @@ export async function POST(request: NextRequest) {
                     <span style="color:#FFFFFF; font-size:15px; line-height:1.6; font-family: Arial, Helvetica, sans-serif;">Abbiamo ricevuto il tuo materiale e lo analizzeremo a breve.</span>
                   </td>
                 </tr>
+                ${filesBlock}
                 <tr>
                   <td align="center" style="padding-bottom: 22px;">
                     <span style="color:#FFFFFF; font-size:15px; line-height:1.6; font-family: Arial, Helvetica, sans-serif;">Tempi e modalità di selezione sono consultabili nella pagina <a href="https://baddriversofitaly.it/info" style="color:#FFFFFF; font-weight:bold; text-decoration:underline;">Info &amp; Regole</a>.</span>
@@ -89,13 +129,13 @@ export async function POST(request: NextRequest) {
 </html>`,
       }),
     })
- 
+
     if (!response.ok) {
       const errText = await response.text()
       console.error('Resend error:', errText)
       return NextResponse.json({ error: 'Invio fallito' }, { status: 500 })
     }
- 
+
     return NextResponse.json({ success: true })
   } catch (err) {
     console.error(err)

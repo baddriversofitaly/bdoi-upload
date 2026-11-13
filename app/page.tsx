@@ -197,7 +197,11 @@ function TermsCheckbox() {
         <Link href="/info" target="_blank" className="text-white underline">
           Regole
         </Link>{' '}
-        di Bad Drivers of Italy.
+        di Bad Drivers of Italy. Ho letto l&apos;
+        <Link href="/privacy" target="_blank" className="text-white underline">
+          Informativa sulla privacy
+        </Link>
+        .
       </label>
     </div>
   )
@@ -297,12 +301,12 @@ function ProgressBar({ percent, label }: { percent: number; label: string }) {
 }
 
 // Invia l'email di conferma senza bloccare il flusso se fallisce
-async function sendConfirmationEmail(email: string) {
+async function sendConfirmationEmail(email: string, fileNames: string[]) {
   try {
     await fetch('/api/send-confirmation', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ email }),
+      body: JSON.stringify({ email, fileNames }),
     })
   } catch (err) {
     console.error('Invio email di conferma fallito:', err)
@@ -370,7 +374,7 @@ function RenamedForm({ onBack }: { onBack: () => void }) {
           onProgress: setFileProgress,
         })
       }
-      await sendConfirmationEmail(email)
+      await sendConfirmationEmail(email, files.map((f) => f.file.name))
       setStatus('success')
     } catch (err) {
       console.error(err)
@@ -470,7 +474,7 @@ function RenamedForm({ onBack }: { onBack: () => void }) {
               <label htmlFor="renamed-confirmed" className="text-sm text-white">
                 Confermo che i nomi dei file qui sopra contengono già{' '}
                 <strong>località (obbligatorio)</strong> e <strong>nickname (facoltativo)</strong>{' '}
-                <strong>(es. Nickname - Località (PV))</strong>. Ho controllato prima di caricare.
+                es. Nickname - Località (PV). Ho controllato prima di caricare.
               </label>
             </div>
           )}
@@ -560,7 +564,7 @@ function NotRenamedForm({ onBack }: { onBack: () => void }) {
         provincia,
         onProgress: setUploadPercent,
       })
-      await sendConfirmationEmail(email)
+      await sendConfirmationEmail(email, [file.name])
       setStatus('success')
     } catch (err) {
       console.error(err)
@@ -613,7 +617,7 @@ function NotRenamedForm({ onBack }: { onBack: () => void }) {
               required
               value={location}
               onChange={(e) => setLocation(e.target.value)}
-              placeholder="es. Codroipo"
+              placeholder="es. Codroipo (UD)"
               className="w-full rounded-md px-3 py-2 bg-white text-[#123769] focus:outline-none focus:ring-2 focus:ring-white placeholder:text-[#123769]/40"
             />
           </div>

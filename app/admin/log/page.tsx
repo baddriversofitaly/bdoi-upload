@@ -15,6 +15,7 @@ type LogEntry = {
   status: 'da_valutare' | 'scaricato' | 'scartato'
   violation_type: string | null
   vehicle_type: string | null
+  pov_dashcam: string | null
   provincia: string | null
   created_at: string
 }
@@ -107,7 +108,7 @@ export default function AdminLogPage() {
 
       const header = [
         'Numero', 'Nome file', 'Nickname', 'Località', 'Provincia',
-        'Tipo infrazione', 'Tipo veicolo', 'Email', 'Stato', 'Data invio',
+        'Evento', 'POV dashcam', 'Utenti coinvolti', 'Email', 'Stato', 'Data invio',
       ]
       const rows = allEntries.map((e) => [
         String(e.seq_number).padStart(6, '0'),
@@ -116,6 +117,7 @@ export default function AdminLogPage() {
         e.location ?? '—',
         e.provincia ?? '—',
         e.violation_type ?? '—',
+        e.pov_dashcam ?? '—',
         e.vehicle_type ?? '—',
         e.email,
         STATUS_LABELS[e.status] ?? e.status,
@@ -192,8 +194,9 @@ export default function AdminLogPage() {
                   <th className="px-4 py-3 font-semibold">Nickname</th>
                   <th className="px-4 py-3 font-semibold">Località</th>
                   <th className="px-4 py-3 font-semibold">Provincia</th>
-                  <th className="px-4 py-3 font-semibold">Infrazione</th>
-                  <th className="px-4 py-3 font-semibold">Veicolo</th>
+                  <th className="px-4 py-3 font-semibold">Evento</th>
+                  <th className="px-4 py-3 font-semibold">POV dashcam</th>
+                  <th className="px-4 py-3 font-semibold">Utenti coinvolti</th>
                   <th className="px-4 py-3 font-semibold">Email</th>
                   <th className="px-4 py-3 font-semibold">Stato</th>
                   <th className="px-4 py-3 font-semibold">Data invio</th>
@@ -212,6 +215,7 @@ export default function AdminLogPage() {
                     <td className="px-4 py-2.5 text-gray-700">{e.location ?? '—'}</td>
                     <td className="px-4 py-2.5 text-gray-700">{e.provincia ?? '—'}</td>
                     <td className="px-4 py-2.5 text-gray-700">{e.violation_type ?? '—'}</td>
+                    <td className="px-4 py-2.5 text-gray-700">{e.pov_dashcam ?? '—'}</td>
                     <td className="px-4 py-2.5 text-gray-700">{e.vehicle_type ?? '—'}</td>
                     <td className="px-4 py-2.5 text-gray-700">{e.email}</td>
                     <td className="px-4 py-2.5">
