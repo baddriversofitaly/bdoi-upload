@@ -116,6 +116,14 @@ export default function ContattiPage() {
               >
                 {status === 'sending' ? 'Invio in corso...' : 'Invia messaggio'}
               </button>
+
+              <p className="text-center text-xs text-white/70">
+                Inviando accetti l&apos;
+                <Link href="/privacy" target="_blank" className="underline text-white">
+                  Informativa sulla privacy
+                </Link>
+                .
+              </p>
             </form>
           )}
         </div>

@@ -166,6 +166,14 @@ export default function FeedbackPage() {
               >
                 {status === 'sending' ? 'Invio in corso...' : 'Invia segnalazione'}
               </button>
+
+              <p className="text-center text-xs text-white/70">
+                Inviando accetti l&apos;
+                <Link href="/privacy" target="_blank" className="underline text-white">
+                  Informativa sulla privacy
+                </Link>
+                .
+              </p>
             </form>
           )}
         </div>

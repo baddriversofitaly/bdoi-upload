@@ -86,7 +86,8 @@ export default function TerminiPage() {
           <p className="text-gray-700">
             I dati raccolti con l&apos;invio (nickname, località, email) vengono utilizzati solo
             per gestire la selezione e il contatto relativo al tuo filmato, e non vengono
-            pubblicati insieme al video salvo tuo consenso esplicito.
+            pubblicati insieme al video salvo tuo consenso esplicito. Per tutti i dettagli leggi
+            l&apos;<Link href="/privacy" className="text-blue-600 underline">Informativa sulla privacy</Link>.
           </p>
         </section>
 

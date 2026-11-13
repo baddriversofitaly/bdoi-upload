@@ -1,15 +1,12 @@
 'use client'
 
-import { useEffect, useState, useCallback, Suspense } from 'react'
+import { useEffect, useMemo, useState, useCallback, Suspense } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
 import Link from 'next/link'
 import { supabase } from '@/lib/supabaseClient'
 import SearchableSelect from '../../components/SearchableSelect'
 import { VIOLATION_TYPES, VEHICLE_TYPES, PROVINCE_OPTIONS } from '../../lib/options'
 import JSZip from 'jszip'
-
-const VIOLATION_OPTIONS = VIOLATION_TYPES.map((v) => ({ value: v, label: v }))
-const VEHICLE_OPTIONS = VEHICLE_TYPES.map((v) => ({ value: v, label: v }))
 
 type Status = 'da_valutare' | 'da_scaricare' | 'scaricati' | 'scartate'
 
@@ -26,8 +23,23 @@ type Submission = {
   status: Status
   violation_type: string | null
   vehicle_type: string | null
+  pov_dashcam: string | null
   provincia: string | null
+  note_bdoi: string | null
   signedUrl?: string
+}
+
+// I valori multipli sono salvati come testo separato da virgole
+const splitValues = (v: string | null) =>
+  v ? v.split(',').map((x) => x.trim()).filter(Boolean) : []
+
+// Lista di base + voci personalizzate già usate in altre clip, in ordine alfabetico
+const buildOptions = (base: string[], used: (string | null)[]) => {
+  const customs = new Set<string>()
+  used.forEach((v) => splitValues(v).forEach((x) => { if (!base.includes(x)) customs.add(x) }))
+  return [...base, ...customs]
+    .sort((a, b) => a.localeCompare(b, 'it'))
+    .map((v) => ({ value: v, label: v }))
 }
 
 const TAB_LABELS: Record<Status, string> = {
@@ -71,6 +83,7 @@ function AdminPanelContent() {
   const [loadingVideoId, setLoadingVideoId] = useState<string | null>(null)
   const [zipping, setZipping] = useState(false)
   const [zipProgress, setZipProgress] = useState({ current: 0, total: 0 })
+  const [deleting, setDeleting] = useState<{ current: number; total: number } | null>(null)
   const [filterEmail, setFilterEmail] = useState('')
   const [filterSeqFrom, setFilterSeqFrom] = useState('')
   const [filterSeqTo, setFilterSeqTo] = useState('')
@@ -177,20 +190,90 @@ function AdminPanelContent() {
     }
   }, [checkingSession, loadSubmissions])
 
-  const deleteSubmission = async (submission: Submission) => {
-    await supabase.storage.from('video-uploads').remove([submission.video_path])
-    await supabase.from('video_submissions').delete().eq('id', submission.id)
-    // Il registro NON va toccato: lo stato resta "congelato" a quello che era
-    // prima dell'eliminazione (da_valutare / scaricato / scartato), dato che
-    // comunque ogni video finisce per essere eliminato prima o poi.
+  // Opzioni dei menù: voci di base + eventuali voci personalizzate già usate, in ordine alfabetico
+  const violationOptions = useMemo(
+    () => buildOptions(VIOLATION_TYPES, submissions.map((s) => s.violation_type)),
+    [submissions]
+  )
+  const vehicleOptions = useMemo(
+    () =>
+      buildOptions(VEHICLE_TYPES, [
+        ...submissions.map((s) => s.vehicle_type),
+        ...submissions.map((s) => s.pov_dashcam),
+      ]),
+    [submissions]
+  )
+
+  // Durante l'eliminazione avvisa se si prova a chiudere/ricaricare la pagina
+  useEffect(() => {
+    if (!deleting) return
+    const handler = (e: BeforeUnloadEvent) => {
+      e.preventDefault()
+      e.returnValue = ''
+    }
+    window.addEventListener('beforeunload', handler)
+    return () => window.removeEventListener('beforeunload', handler)
+  }, [deleting])
+
+  // Elimina i video a gruppi di 10 (molto più veloce che uno alla volta) mostrando
+  // l'avanzamento. Il file e la riga vengono eliminati insieme: se il file non si
+  // riesce a cancellare, la riga resta, così non rimane un file "orfano" nello storage.
+  // Il registro NON va toccato: lo stato resta "congelato" a quello che era
+  // prima dell'eliminazione (da_valutare / scaricato / scartato).
+  const deleteSubmissions = async (targets: Submission[]) => {
+    const BATCH_SIZE = 10
+    const deletedIds = new Set<string>()
+    let failed = 0
+
+    setDeleting({ current: 0, total: targets.length })
+
+    try {
+      for (let i = 0; i < targets.length; i += BATCH_SIZE) {
+        const chunk = targets.slice(i, i + BATCH_SIZE)
+
+        const { error: storageError } = await supabase.storage
+          .from('video-uploads')
+          .remove(chunk.map((s) => s.video_path))
+
+        if (storageError) {
+          console.error(storageError)
+          failed += chunk.length
+        } else {
+          const { error: dbError } = await supabase
+            .from('video_submissions')
+            .delete()
+            .in('id', chunk.map((s) => s.id))
+
+          if (dbError) {
+            console.error(dbError)
+            failed += chunk.length
+          } else {
+            chunk.forEach((s) => deletedIds.add(s.id))
+          }
+        }
+
+        setDeleting({ current: Math.min(i + BATCH_SIZE, targets.length), total: targets.length })
+      }
+    } finally {
+      setSubmissions((prev) => prev.filter((s) => !deletedIds.has(s.id)))
+      setSelected((prev) => {
+        const next = new Set(prev)
+        deletedIds.forEach((id) => next.delete(id))
+        return next
+      })
+      setDeleting(null)
+    }
+
+    if (failed > 0) {
+      alert(`${failed} video non sono stati eliminati a causa di un errore. Riprova.`)
+    }
   }
 
   const handleDelete = async (submission: Submission) => {
     const confirmed = window.confirm('Eliminare definitivamente questo video?')
     if (!confirmed) return
 
-    await deleteSubmission(submission)
-    setSubmissions((prev) => prev.filter((s) => s.id !== submission.id))
+    await deleteSubmissions([submission])
   }
 
   // Nel registro permanente teniamo solo 3 stati: "da_scaricare" conta ancora come
@@ -216,7 +299,7 @@ function AdminPanelContent() {
   // subito anche nel registro permanente, così resta anche dopo un'eventuale eliminazione.
   const updateClassification = async (
     submission: Submission,
-    field: 'violation_type' | 'vehicle_type' | 'provincia',
+    field: 'violation_type' | 'vehicle_type' | 'pov_dashcam' | 'provincia',
     value: string
   ) => {
     setSubmissions((prev) =>
@@ -229,22 +312,45 @@ function AdminPanelContent() {
       .eq('seq_number', submission.seq_number)
   }
 
+  // Salva la "Nota BDOI" (si scrive nel campo e si salva quando si esce dal campo)
+  const saveBdoiNote = async (submission: Submission, value: string) => {
+    const clean = value.trim()
+    await supabase
+      .from('video_submissions')
+      .update({ note_bdoi: clean || null })
+      .eq('id', submission.id)
+  }
+
   const getDownloadFileName = (submission: Submission) => {
     const sanitize = (name: string) => name.replace(/[\\/:*?"<>|]/g, '-').trim()
     const ext = submission.video_path.split('.').pop()
     const seq = String(submission.seq_number).padStart(6, '0')
 
+    // La Nota BDOI (se presente) viene aggiunta in fondo al nome del file, accorciata
+    // a 80 caratteri per non creare nomi troppo lunghi.
+    const bdoiNote = submission.note_bdoi ? sanitize(submission.note_bdoi).slice(0, 80) : ''
+    const noteSuffix = bdoiNote ? ` - ${bdoiNote}` : ''
+
     // Il numero progressivo va sempre in testa al nome, per evitare sovrascritture
     // quando più invii hanno lo stesso nickname/località o lo stesso nome file originale.
-    return submission.nickname
-      ? `${seq} - ${sanitize(
-          `${submission.nickname} - ${submission.location}${
-            submission.provincia ? ` (${submission.provincia})` : ''
-          }`
-        )}.${ext}`
-      : submission.original_filename
-        ? `${seq} - ${sanitize(submission.original_filename)}`
-        : `${seq} - ${submission.video_path}`
+    if (submission.nickname) {
+      return `${seq} - ${sanitize(
+        `${submission.nickname} - ${submission.location}${
+          submission.provincia ? ` (${submission.provincia})` : ''
+        }`
+      )}${noteSuffix}.${ext}`
+    }
+
+    if (submission.original_filename) {
+      // Il file originale ha già la sua estensione: la nota va prima dell'estensione
+      const original = sanitize(submission.original_filename)
+      const dot = original.lastIndexOf('.')
+      return dot > 0
+        ? `${seq} - ${original.slice(0, dot)}${noteSuffix}${original.slice(dot)}`
+        : `${seq} - ${original}${noteSuffix}`
+    }
+
+    return `${seq} - ${submission.video_path}`
   }
 
   const downloadSubmission = async (submission: Submission) => {
@@ -391,13 +497,7 @@ function AdminPanelContent() {
     )
     if (!confirmed) return
 
-    for (const submission of targets) {
-      await deleteSubmission(submission)
-    }
-
-    const deletedIds = new Set(targets.map((s) => s.id))
-    setSubmissions((prev) => prev.filter((s) => !deletedIds.has(s.id)))
-    setSelected(new Set())
+    await deleteSubmissions(targets)
   }
 
   const handleLogout = async () => {
@@ -427,6 +527,29 @@ function AdminPanelContent() {
 
   return (
     <main className="min-h-screen bg-[#EEF1F5] px-4 py-8">
+      {/* Eliminazione in corso: blocca la pagina e mostra l'avanzamento */}
+      {deleting && (
+        <div className="fixed inset-0 z-50 bg-black/50 flex items-center justify-center px-4">
+          <div className="bg-white rounded-xl shadow-xl p-6 w-full max-w-sm text-center">
+            <p className="font-bold text-[#123769] uppercase tracking-wide text-sm mb-3">
+              Eliminazione in corso...
+            </p>
+            <div className="h-3 bg-gray-200 rounded-full overflow-hidden mb-2">
+              <div
+                className="h-full bg-[#1B4B93] rounded-full transition-all duration-200"
+                style={{ width: `${Math.round((deleting.current / deleting.total) * 100)}%` }}
+              />
+            </div>
+            <p className="text-sm text-gray-600">
+              {deleting.current} di {deleting.total} video
+            </p>
+            <p className="text-xs text-gray-400 mt-3">
+              Non chiudere né cambiare pagina finché non finisce.
+            </p>
+          </div>
+        </div>
+      )}
+
       <div className="max-w-3xl mx-auto">
         <div className="flex items-center justify-between mb-4">
           <div className="flex items-center gap-3">
@@ -560,7 +683,7 @@ function AdminPanelContent() {
                     </button>
                     <button
                       onClick={() => handleBulkStatus(visible, 'scartate')}
-                      className="bg-amber-400 text-[#123769] px-3 py-1.5 rounded-full text-xs font-bold uppercase tracking-wide"
+                      className="bg-red-600 text-white px-3 py-1.5 rounded-full text-xs font-bold uppercase tracking-wide"
                     >
                       Scarta
                     </button>
@@ -580,7 +703,7 @@ function AdminPanelContent() {
                     </button>
                     <button
                       onClick={() => handleBulkStatus(visible, 'scartate')}
-                      className="bg-amber-400 text-[#123769] px-3 py-1.5 rounded-full text-xs font-bold uppercase tracking-wide"
+                      className="bg-red-600 text-white px-3 py-1.5 rounded-full text-xs font-bold uppercase tracking-wide"
                     >
                       Scarta
                     </button>
@@ -592,12 +715,14 @@ function AdminPanelContent() {
                     </button>
                   </>
                 )}
-                <button
-                  onClick={() => handleBulkDelete(visible)}
-                  className="bg-red-50 text-red-700 border border-red-200 px-3 py-1.5 rounded-full text-xs font-bold uppercase tracking-wide"
-                >
-                  Elimina
-                </button>
+                {tab !== 'da_scaricare' && (
+                  <button
+                    onClick={() => handleBulkDelete(visible)}
+                    className="bg-red-50 text-red-700 border border-red-200 px-3 py-1.5 rounded-full text-xs font-bold uppercase tracking-wide"
+                  >
+                    Elimina
+                  </button>
+                )}
               </div>
             )}
           </div>
@@ -677,25 +802,39 @@ function AdminPanelContent() {
                 </button>
               )}
 
-              {/* Classificazione: tipo infrazione, tipo veicolo, provincia */}
-              <div className="grid grid-cols-1 sm:grid-cols-3 gap-2 mb-3">
+              {/* Classificazione: evento, POV dashcam, utenti coinvolti, provincia */}
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 mb-3">
                 <div>
-                  <label className="block text-xs font-semibold text-gray-500 mb-1">Tipo infrazione</label>
+                  <label className="block text-xs font-semibold text-gray-500 mb-1">Evento</label>
                   <SearchableSelect
                     multiple
-                    options={VIOLATION_OPTIONS}
-                    value={s.violation_type ? s.violation_type.split(',').map((v) => v.trim()).filter(Boolean) : []}
+                    allowCustom
+                    options={violationOptions}
+                    value={splitValues(s.violation_type)}
                     onChange={(values) => updateClassification(s, 'violation_type', values.join(', '))}
                     placeholder="Non specificato"
                     variant="white"
                   />
                 </div>
                 <div>
-                  <label className="block text-xs font-semibold text-gray-500 mb-1">Tipo veicolo</label>
+                  <label className="block text-xs font-semibold text-gray-500 mb-1">POV dashcam</label>
                   <SearchableSelect
                     multiple
-                    options={VEHICLE_OPTIONS}
-                    value={s.vehicle_type ? s.vehicle_type.split(',').map((v) => v.trim()).filter(Boolean) : []}
+                    allowCustom
+                    options={vehicleOptions}
+                    value={splitValues(s.pov_dashcam)}
+                    onChange={(values) => updateClassification(s, 'pov_dashcam', values.join(', '))}
+                    placeholder="Non specificato"
+                    variant="white"
+                  />
+                </div>
+                <div>
+                  <label className="block text-xs font-semibold text-gray-500 mb-1">Utenti coinvolti</label>
+                  <SearchableSelect
+                    multiple
+                    allowCustom
+                    options={vehicleOptions}
+                    value={splitValues(s.vehicle_type)}
                     onChange={(values) => updateClassification(s, 'vehicle_type', values.join(', '))}
                     placeholder="Non specificato"
                     variant="white"
@@ -713,6 +852,28 @@ function AdminPanelContent() {
                 </div>
               </div>
 
+              {/* Note BDOI: vengono aggiunte in fondo al nome del file quando lo scarichi */}
+              <div className="mb-3">
+                <label className="block text-xs font-semibold text-gray-500 mb-1">
+                  Note BDOI{' '}
+                  <span className="font-normal text-gray-400">
+                    (aggiunte al nome del file al download)
+                  </span>
+                </label>
+                <input
+                  type="text"
+                  value={s.note_bdoi ?? ''}
+                  onChange={(e) =>
+                    setSubmissions((prev) =>
+                      prev.map((x) => (x.id === s.id ? { ...x, note_bdoi: e.target.value } : x))
+                    )
+                  }
+                  onBlur={(e) => saveBdoiNote(s, e.target.value)}
+                  placeholder="es. incrocio pericoloso, Rossi - Roma"
+                  className="w-full border border-gray-300 rounded px-3 py-2 text-sm bg-gray-50 text-gray-800"
+                />
+              </div>
+
               <div className="flex gap-3 flex-wrap">
                 {s.status === 'da_valutare' ? (
                   <>
@@ -724,7 +885,7 @@ function AdminPanelContent() {
                     </button>
                     <button
                       onClick={() => updateStatus(s, 'scartate')}
-                      className="bg-amber-400 text-[#123769] px-4 py-2 rounded-full text-sm font-bold uppercase tracking-wide"
+                      className="bg-red-600 text-white px-4 py-2 rounded-full text-sm font-bold uppercase tracking-wide"
                     >
                       Scarta
                     </button>
@@ -739,7 +900,7 @@ function AdminPanelContent() {
                     </button>
                     <button
                       onClick={() => updateStatus(s, 'scartate')}
-                      className="bg-amber-400 text-[#123769] px-4 py-2 rounded-full text-sm font-bold uppercase tracking-wide"
+                      className="bg-red-600 text-white px-4 py-2 rounded-full text-sm font-bold uppercase tracking-wide"
                     >
                       Scarta
                     </button>
@@ -751,12 +912,14 @@ function AdminPanelContent() {
                     </button>
                   </>
                 )}
-                <button
-                  onClick={() => handleDelete(s)}
-                  className="bg-red-50 text-red-700 border border-red-200 px-4 py-2 rounded-full text-sm font-bold uppercase tracking-wide"
-                >
-                  Elimina
-                </button>
+                {s.status !== 'da_scaricare' && (
+                  <button
+                    onClick={() => handleDelete(s)}
+                    className="bg-red-50 text-red-700 border border-red-200 px-4 py-2 rounded-full text-sm font-bold uppercase tracking-wide"
+                  >
+                    Elimina
+                  </button>
+                )}
               </div>
             </div>
           ))}
